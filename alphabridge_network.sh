@@ -1,54 +1,47 @@
 #!/usr/bin/env bash
 
-#check which is the current work directory --> variable che andra aggiunta a + /src/network_int.py 
-
 # Check if all arguments are provided
-if [ "$#" -ne 4 ]; then
-    echo "Usage: $0 <input_directory> <threshold> <output_directory_project> <binary_or_complex>"
+if [ "$#" -ne 3 ]; then
+    echo "Usage: $0 <input_directory> <threshold> <output_directory_net>"
     exit 1
 fi
 
 # Initialize variables
 input_directory="$1"
 threshold=$(echo "$2" | xargs) # Remove unwanted spaces
-output_directory_project="$3"
-binary_or_complex="$4"
+output_directory_net="$3"
 
 # Ensure the output directory exists
-mkdir -p "$output_directory_project"
+mkdir -p "$output_directory_net"
 
-# Check if input directory contains only files (no subdirectories)
-contains_only_files=true
-for item in "$input_directory"/*; do
-    if [ -d "$item" ]; then
-        contains_only_files=false
-        break
-    fi
-done
-##just complex for noww
-#running alphabridge 
-if [ "$contains_only_files" = true ]; then
-    # Process the single directory
-    echo "Running: python3 define_interfaces.py -i $input_directory -t $threshold"
-    python3 /local_data/carmen/zata/AlphaBridge/define_interfaces.py -i "$input_directory" -t "$threshold" || exit 1
-else
-    # Iterate over subdirectories
-    for dir in "$input_directory"/*; do
-        [ -d "$dir" ] || continue
-        echo "Processing subdirectory: $dir"
-        python3 /local_data/carmen/zata/AlphaBridge/define_interfaces.py -i "$dir" -t "$threshold" || exit 1
-    done
-fi
+#check which is the current work directory 
+cwd=$(pwd)
+echo "current working directory: $cwd"
 
-# Run the appropriate main script based on binary_or_complex argument
-if [ "$binary_or_complex" = "bin" ]; then
-    echo "Running: python3 binary_interactions.py -i $input_directory -o $output_directory_project -t $threshold"
-    python3 /local_data/carmen/code/interactive_network/src/binary_interactions.py -i "$input_directory" -o "$output_directory_project" -t "$threshold" || exit 1
-elif [ "$binary_or_complex" = "complex" ]; then
-    echo "Running: python3 network_int.py -i $input_directory -o $output_directory_project -t $threshold"
-    python3 /local_data/carmen/code/interactive_network/src/network_int.py -i "$input_directory" -o "$output_directory_project" -t "$threshold" || exit 1
-else
-    echo "Error: Invalid value for binary_or_complex. Use 'bin' or 'complex'."
-    exit 1
-fi
+#parsing the confg file content as a variable 
+# path to the conig 
+config_file="$cwd/config_alphabridge_path.ini"
+#grep -vE '^#|^$' "$config_file" --> ensures only non-empty, non-comment lines are passed through
+#head -n 1: Takes only the first valid line from the filtered output
+#path=$( ... ) -> captures the command’s output and stores it in the path variable
+#creating the varibale
+path=$(grep -vE '^#|^$' "$config_file" | head -n 1)
+
+echo "current used path for the define_interface.py $path"
+
+
+#STEP 1: running alphabridge 
+echo "Running: python3 define_interfaces.py -i $input_directory -t $threshold"
+#this is the path that the user should be able to change
+python3 "$cwd"/config_file -i "$input_directory" -t "$threshold"
+
+echo "step 1 is done!"
+
+#STEP 2: run the network script 
+echo "Running: python3 network_int.py -i $input_directory -o $output_directory_net -t $threshold"
+#relative path
+python3 "$cwd"/src/network_int.py -i "$input_directory" -o "$output_directory_net" -t "$threshold"
+
+echo "done! check your input folder for alhabridge output and your output directory for the netork :)"
+
 

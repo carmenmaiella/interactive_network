@@ -1,6 +1,10 @@
-#script where I will call the single script for the COMPELEX WITH MERGED NODE (less nodes) and NOT MERGED NODE(more nodes)
-#only the compute button function that will call everything (try to understand this part)
-#they will produce as an output the interactive network
+'''MAIN SCRIPT
+input: confident interface interaction between proteins predictd by alphabridge
+ouput: json file containing the 3 different networks:
+    1) network that shows confident contact interface between protein (not merged)
+    2) network that shows confident contact interface between protein (merged)
+    3) network that shows a general overview of the confident physical interaction between proteins'''
+
 import complex_not_merged as no_merg
 import complex_merged as merg
 import protein_network as protein_net
@@ -8,14 +12,7 @@ import argparse
 import sys 
 import os
 import pandas as pd
-import igraph as ig
-import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
-import matplotlib.patches as mpatches
-import matplotlib.lines as mlines
-import numpy as np
 import json
-from pyvis.network import Network
 
 def parse_args():
 
@@ -42,12 +39,19 @@ def parse_args():
 
     return args
 
+
+#CONVERTING THE JSON FILE (output of alphabridge) IN A DF
+
 def from_json_to_df(in_dir, threshold):
-    #CONVERTING THE JSON FILE IN A DF
     all_data = []
         
-    # Extract folder name from `in_dir`, ignore the first part 
-    folder_name = os.path.basename(in_dir).split('_', 1)[1] 
+    # handle situatio where the folder name has complex at the beginning or just the name of the protein
+    #result --> just the protein name are kept 
+    folder_name = os.path.basename(in_dir)
+    if "omplex" not in folder_name: #so the c can be either C or c + every name that you prefer
+        folder_name = folder_name
+    else:
+        folder_name = folder_name.split('_', 1)[1]
 
     # Extract protein names from the folder, and assign each protein a letter
     proteins = folder_name.split('_')  # Split the folder name to get protein names
@@ -61,13 +65,14 @@ def from_json_to_df(in_dir, threshold):
         if not os.path.isdir(subdir_path):
             continue
 
-        # Check if this directory itself is "AlphaBridge" or contains it
+        # Check where is the alphabridge output subdiectory
         if "AlphaBridge" in subdir:
             # Case 1: "AlphaBridge" is an immediate subdirectory of `in_dir`
             alphabridge_path = subdir_path
-        else:
+        #THIS WAS FOR THE BINARY INTERACTION, FOR NOW I PUT IT COMMENTED    
+        #else:
             # Case 2: "AlphaBridge" is inside another subdirectory
-            alphabridge_path = os.path.join(subdir_path, "AlphaBridge")
+            #alphabridge_path = os.path.join(subdir_path, "AlphaBridge")
 
         # Process if the "AlphaBridge" directory exists
         if os.path.isdir(alphabridge_path):
@@ -119,6 +124,8 @@ def main():
     args = parse_args()
     in_dir = args.in_dir
     threshold = float(args.threshold)
+    if not os.path.exists(args.o_dir):
+        os.makedirs(args.o_dir)
     # funtion that creates the df that will be used as an inpt for the next fuction
     df = from_json_to_df(in_dir, threshold)
     #function --> INFORMATION FOR THE NETWORK WITH MORE NODES(NO MERGED)
