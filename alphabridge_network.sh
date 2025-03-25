@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+#check which is the current work directory --> variable che andra aggiunta a + /src/network_int.py 
+
 # Check if all arguments are provided
 if [ "$#" -ne 4 ]; then
     echo "Usage: $0 <input_directory> <threshold> <output_directory_project> <binary_or_complex>"
@@ -23,7 +25,7 @@ for item in "$input_directory"/*; do
         break
     fi
 done
-
+##just complex for noww
 #running alphabridge 
 if [ "$contains_only_files" = true ]; then
     # Process the single directory
