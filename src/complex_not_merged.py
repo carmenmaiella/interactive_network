@@ -12,7 +12,7 @@ import numpy as np
 import json
 from pyvis.network import Network
 from networkx.readwrite import json_graph;
-#FUCNTION USED IN BOTH NETWORK WITH MERGING NODES AND NOT MERGIN NODES
+#FUCNTION USED IN NETWORK WITH MERGING NODES AND NOT MERGIN NODES
 def generate_intraprotein_edges(protein_dict):
     edges = []
     for protein, intervals in protein_dict.items():
@@ -24,7 +24,7 @@ def generate_intraprotein_edges(protein_dict):
         edges.extend(protein_edges)
     return edges
 
-#function for modify the labels
+#FUCNTION USED IN NETWORK WITH NOT MERGIN NODES AND THE PROTEIN==NODE NETWORK
 def formatting_labels(s):
     parts = s.split(" ")
     result = [parts[0]]  
@@ -41,7 +41,6 @@ def formatting_labels(s):
                 result.append(f"({temp_list[i]}-{temp_list[i+1]})")
     return " ".join(result)
 
-#FUCTION THAT ARE NEEDED IN THE MAIN FUNCTION FOR THE NETWORK WITH NO MERGIN NODES
 def create_new_column_interface_intervals_no_merge(df):
     grouped = df.groupby(["interface"])
     

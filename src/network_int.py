@@ -3,6 +3,7 @@
 #they will produce as an output the interactive network
 import complex_not_merged as no_merg
 import complex_merged as merg
+import protein_network as protein_net
 import argparse
 import sys 
 import os
@@ -101,11 +102,13 @@ def from_json_to_df(in_dir, threshold):
 
     # Convert the list to a DataFrame, THIS IS THE ONE THAT IS NEEDED FOR BOTH
     df = pd.DataFrame(all_data)
+    #print(df)
     # Replace letters with protein names in 'prot_1' and 'prot_2' columns
     for column in ['prot_1', 'prot_2']:
         df[column] = df[column].apply(
             lambda protein_code: next((protein for protein, letter in protein_to_letter.items() if letter == protein_code), protein_code)
         )
+    print(df)
     return df
 
 
@@ -120,14 +123,18 @@ def main():
     df = from_json_to_df(in_dir, threshold)
     #function --> INFORMATION FOR THE NETWORK WITH MORE NODES(NO MERGED)
     j_not_merged = no_merg.get_protein_network_no_merging(df)
-    print("FINISHED THE NOT MERGED")
+    print("FINISHED THE NOT MERGED NETWORK")
     #function --> INFORMATION FOR THE NETWORK WITH LESS NODES(MERGED)
     j_merged = merg.get_protein_network_merging(df)
-    print("FINISHED THE MERGED")
+    print("FINISHED THE MERGED NETWORK")
+    #function --> INFORMATION FOR THE NETWORK WHERE NOES == PROTEIN
+    j_proteins = protein_net.get_protein_network(df)
+    print("FINISHED THE WHOLE PROTEIN NETWORK")
     # Combine them into a single dictionary
     combined_networks = {
         "network_not_merged": j_not_merged,
-        "network_merged": j_merged
+        "network_merged": j_merged,
+        "protin network": j_proteins 
     }
 
     # Save to a JSON file
