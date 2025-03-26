@@ -162,7 +162,7 @@ def get_protein_network(df):
 
     #COLORS 
     # Generate as many unique colors as the number of protein groups
-    cmap = plt.get_cmap("tab10")  # 'tab10' colormap has good distinct colors, can handle up to 10 easily
+    cmap = plt.get_cmap("rainbow") 
     colors = [mcolors.rgb2hex(cmap(i)) for i in np.linspace(0, 1, number_of_nodes)]
         
     # Assign colors to graph nodes

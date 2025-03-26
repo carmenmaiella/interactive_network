@@ -352,7 +352,7 @@ def get_protein_network_merging(df):
     #COLORS 
     # Generate as many unique colors as the number of protein groups
     num_proteins = len(nodes_for_each_protein)
-    cmap = plt.get_cmap("tab10")  # 'tab10' colormap has good distinct colors, can handle up to 10 easily
+    cmap = plt.get_cmap("rainbow") 
     colors = [mcolors.rgb2hex(cmap(i)) for i in np.linspace(0, 1, num_proteins)]
     
     # Assign colors to nodes based on their protein group
