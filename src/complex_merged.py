@@ -1,18 +1,16 @@
 #script for obtaining ONLY THE INTERACTIVE NETWORK WITH MERGE
-import argparse
-import sys 
-import os
+#import required packages
 import pandas as pd
 import igraph as ig
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
-import matplotlib.patches as mpatches
-import matplotlib.lines as mlines
 import numpy as np
-import json
 from networkx.readwrite import json_graph;
-from pyvis.network import Network
+
 #FUCNTION USED IN BOTH NETWORK WITH MERGING NODES AND NOT MERGIN NODES
+
+#generating eges between the node tht belog to the same protein
+
 def generate_intraprotein_edges(protein_dict):
     edges = []
     for protein, intervals in protein_dict.items():
@@ -24,7 +22,8 @@ def generate_intraprotein_edges(protein_dict):
         edges.extend(protein_edges)
     return edges
 
-#function for modify the labels
+#formatting labels --> display the label nodes as "protein name (form aa,to aa) (form aa,to aa)""
+
 def formatting_labels(s):
     parts = s.split(" ")
     result = [parts[0]]  
@@ -70,9 +69,9 @@ def defining_intervals(interval1, interval2, min_value_for_merging):
     
 
 #2 APPLY THE defining_intervals FUNCTION IN THE SMALL DF FOR A SINGLE PROTEIN
+
 # UPDATE THE DF WITH NEW COLUMNS CONTANING THE MERGED INTERVALS
 
-#this one no list
 
 def get_merging_intervals(df, min_value_for_merging):
     for i in range(len(df['protein'])):
@@ -127,6 +126,7 @@ def create_new_column_interface_intervals(df):
 
 
 #function that check if there are overlipping interfaces, here we updating the interface_intervals_merged column
+
 def check_overlapping_interfaces(inte_1, inte_2):
     # check if every int in inte_1 are in inte_2
     if all(i in inte_2 for i in inte_1):
@@ -141,6 +141,8 @@ def check_overlapping_interfaces(inte_1, inte_2):
         return sorted(union)
     #otherwise
     return None
+
+
 
 '''MAIN FUNCTION '''
 def get_protein_network_merging(df):
@@ -187,7 +189,7 @@ def get_protein_network_merging(df):
     for prot, df in protein_df_dict.items():
         df = create_new_column_interface_intervals(df)
 
-    print(f"protein_df_dict AFTER STEP 4(merge intervals in interfaces intervals)-->{protein_df_dict}")
+    #print(f"protein_df_dict AFTER STEP 4(merge intervals in interfaces intervals)-->{protein_df_dict}")
 
     #STEP 5 --> check if there are overlapping interfaces in the dataframe of the signle protein (here you check all togheter bc it could be)
     #that "different" interfaces in different binary interaction are actually overlapping
@@ -206,14 +208,14 @@ def get_protein_network_merging(df):
                     df.at[i,'interface_intervals_merged'] = new_interfaces
                     df.at[j,'interface_intervals_merged'] = new_interfaces
 
-    print(f"protein_df_dict AFTER STEP 5(check if there are overlapping interfaces)-->{protein_df_dict}")
+    #print(f"protein_df_dict AFTER STEP 5(check if there are overlapping interfaces)-->{protein_df_dict}")
 
     #STEP 6 --> obtaining again the output of alphabridge but merged
 
     #using the original index we have now a dataframe we the protein involoved in the interaction are one after the other ikn rw
     #ex --> first row (protein A) and second row (protein B) in the orginal df are interacting and they are in the same row
     merged_df = pd.concat(protein_df_dict.values(), axis=0).sort_values(by="original_index").reset_index(drop=True)
-    print(f"merged df:{merged_df}")
+    #print(f"merged df:{merged_df}")
 
     # Creating a copy of the merged_df
     copied_df = merged_df.copy()
@@ -221,10 +223,10 @@ def get_protein_network_merging(df):
     # deletion of rows
     #in one df we will delete the rows from index 1 + step 2
     filtered_original = merged_df.drop(merged_df.index[1::2])  # delete 1, 3, 5, ...
-    print(f"filtered_original df:{filtered_original}")
+    #print(f"filtered_original df:{filtered_original}")
     #in one df we will delete the rows from index 0 + step 2
     filtered_copy = copied_df.drop(copied_df.index[0::2])  # deete 0, 2, 4, ...
-    print(f"filtered_copy df:{filtered_copy}")
+    #print(f"filtered_copy df:{filtered_copy}")
 
 
     # after we delete the row we can have merge the 2 df, based on the original index column
@@ -236,7 +238,7 @@ def get_protein_network_merging(df):
     final_df["interface_intervals_mergerd_2_labels"] = final_df["interface_intervals_mergerd_2_labels"].apply(formatting_labels)
 
 
-    print(f"merged_protein_dataframe_dict  STEP 6(obtaining again the output of alphabridge but merged-->{final_df}")
+    #print(f"merged_protein_dataframe_dict  STEP 6(obtaining again the output of alphabridge but merged-->{final_df}")
 
 
     #START TO TAKE INFORMATION FOR PLOTTING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -267,16 +269,16 @@ def get_protein_network_merging(df):
         if prot_2_interface not in protein_nodes_old[prot_2_id]:  # Check if the interval is unique
             protein_nodes_old[prot_2_id].append(prot_2_interface)
 
-    print(f'protein nodes old  {protein_nodes_old}')
+    #print(f'protein nodes old  {protein_nodes_old}')
 
     protein_nodes = dict(sorted(protein_nodes_old.items()))
     
-    print(f'protein nodes {protein_nodes}')
+    #print(f'protein nodes {protein_nodes}')
 
 
     # Calculate the number of unique nodes (intervals) for each protein
     nodes_for_each_protein = [len(value) for value in protein_nodes.values()]
-    print(f'nodes_for_each_protein {nodes_for_each_protein}')
+    #print(f'nodes_for_each_protein {nodes_for_each_protein}')
 
     # INTERACTION BETWEEN DIFFERENT PROTEINS
     inter_protein_interactions = []
@@ -294,8 +296,8 @@ def get_protein_network_merging(df):
         inter_protein_interactions.append(interaction)
 
     # Print all protein interactions
-    print(f" different protein interactions: {inter_protein_interactions}")
-    print(len(inter_protein_interactions))
+    #print(f" different protein interactions: {inter_protein_interactions}")
+    #print(len(inter_protein_interactions))
 
     unique_inter_protein_interactions = []   
 
@@ -308,15 +310,15 @@ def get_protein_network_merging(df):
             unique_inter_protein_interactions.append(interaction)
             seen_interactions.add(sorted_interaction)  
 
-    print(unique_inter_protein_interactions)
-    print(f" unique_inter_protein_interactions: {unique_inter_protein_interactions}")
+    #print(unique_inter_protein_interactions)
+    #print(f" unique_inter_protein_interactions: {unique_inter_protein_interactions}")
 
     #print(f"Unique protein interactions: {unique_inter_protein_interactions}")
 
 
     #INTERACTION WHITIN THE SAME PROTEIN
     edges_intraprpt = generate_intraprotein_edges(protein_nodes)
-    print(f'edges_intraprt {edges_intraprpt}')
+    #print(f'edges_intraprt {edges_intraprpt}')
 
     
     #PLOTTING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! THE NOT INTERACTIVE ONE
@@ -335,16 +337,16 @@ def get_protein_network_merging(df):
         for interval_aa_str in value:
             labels.append(interval_aa_str)
 
-    print(f"labels: {labels}")
-    print(f"number of nodes:{number_of_nodes}")
+    #print(f"labels: {labels}")
+    #print(f"number of nodes:{number_of_nodes}")
     
     #adding nodes
     g.add_vertices(number_of_nodes)
     
     #assign labels to each node (the order follow the dictionary protein_nodes)
     g.vs['label'] = labels
-    for vertex in g.vs:     
-        print(f"ID: {vertex.index}, Label: {vertex['label']}")
+    #for vertex in g.vs:     
+    #    print(f"ID: {vertex.index}, Label: {vertex['label']}")
 
 
     #COLORS 
@@ -360,7 +362,7 @@ def get_protein_network_merging(df):
         
     # Assign colors to graph nodes
     g.vs["color"] = node_colors
-    print(f"node colors{node_colors}")
+    #print(f"node colors{node_colors}")
 
     
     #EDGES
@@ -371,7 +373,7 @@ def get_protein_network_merging(df):
         source_index = g.vs.find(label=f"{source}").index
         target_index = g.vs.find(label=f"{target}").index
         edges_diff.append((source_index, target_index))
-    print(f"edges diff:{edges_diff}")
+    #print(f"edges diff:{edges_diff}")
     g.add_edges(edges_diff)
     
     # same protein edges
@@ -403,7 +405,7 @@ def get_protein_network_merging(df):
 
    #LAYAOUT
 
-    layout = g.layout("fruchterman_reingold")
+    #layout = g.layout("fruchterman_reingold")
 
     
    #PLOT 

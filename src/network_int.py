@@ -5,6 +5,8 @@ ouput: json file containing the 3 different networks:
     2) network that shows confident contact interface between protein (merged)
     3) network that shows a general overview of the confident physical interaction between proteins'''
 
+#import required packages
+
 import complex_not_merged as no_merg
 import complex_merged as merg
 import protein_network as protein_net
@@ -13,6 +15,8 @@ import sys
 import os
 import pandas as pd
 import json
+
+#running the script form the command line
 
 def parse_args():
 
@@ -108,12 +112,20 @@ def from_json_to_df(in_dir, threshold):
     # Convert the list to a DataFrame, THIS IS THE ONE THAT IS NEEDED FOR BOTH
     df = pd.DataFrame(all_data)
     #print(df)
+
+
     # Replace letters with protein names in 'prot_1' and 'prot_2' columns
+    #design a fucnon that does that
+    def convert_protein(protein_code):
+    # Loop through the dictionary to find a match
+        for protein, letter in protein_to_letter.items():
+            if letter == protein_code:
+                return protein  # Return the matching protein name
+        return protein_code  # If no match is found, return the original value
+
     for column in ['prot_1', 'prot_2']:
-        df[column] = df[column].apply(
-            lambda protein_code: next((protein for protein, letter in protein_to_letter.items() if letter == protein_code), protein_code)
-        )
-    print(df)
+        df[column] = df[column].apply(convert_protein)
+    #print(df)
     return df
 
 

@@ -14,34 +14,46 @@ output_directory_net="$3"
 # Ensure the output directory exists
 mkdir -p "$output_directory_net"
 
-#check which is the current work directory 
+# Check if input directory exists
+if [ ! -d "$input_directory" ]; then
+    echo "Error: Input directory $input_directory does not exist."
+    exit 1
+fi
+
+# Check which is the current working directory
 cwd=$(pwd)
-echo "current working directory: $cwd"
+echo "Current working directory: $cwd"
 
-#parsing the confg file content as a variable 
-# path to the conig 
-config_file="$cwd/config_alphabridge_path.ini"
-#grep -vE '^#|^$' "$config_file" --> ensures only non-empty, non-comment lines are passed through
-#head -n 1: Takes only the first valid line from the filtered output
-#path=$( ... ) -> captures the command’s output and stores it in the path variable
-#creating the varibale
-path=$(grep -vE '^#|^$' "$config_file" | head -n 1)
+#Parse the config file content as a variable
+# Read the path from the .ini file
+alphabridge_path=$(grep '^alphabridge_path' config_alphabridge_path.ini | cut -d '=' -f 2 | xargs)
 
-echo "current used path for the define_interface.py $path"
+#PRINT the alphabridge path to verify it's being extracted correctly
+echo "Alphabridge path extracted: $alphabridge_path"
 
+# Check if the path is valid
+if [ -z "$alphabridge_path" ]; then
+    echo "Error: Alphabridge path not found in config_alphabridge_path.ini."
+    exit 1
+fi
 
-#STEP 1: running alphabridge 
-echo "Running: python3 define_interfaces.py -i $input_directory -t $threshold"
-#this is the path that the user should be able to change
-python3 "$cwd"/config_file -i "$input_directory" -t "$threshold"
+# Check if the alphabridge script exists at the path
+if [ ! -f "$alphabridge_path" ]; then
+    echo "Error: Alphabridge script not found at the specified path: $alphabridge_path."
+    exit 1
+fi
 
-echo "step 1 is done!"
+# Step 1: Running alphabridge, NO THRESHOLD HERE
+echo "Running: python3 $alphabridge_path -i $input_directory"
+python3 "$alphabridge_path" -i "$input_directory"
 
-#STEP 2: run the network script 
-echo "Running: python3 network_int.py -i $input_directory -o $output_directory_net -t $threshold"
-#relative path
-python3 "$cwd"/src/network_int.py -i "$input_directory" -o "$output_directory_net" -t "$threshold"
+echo "Step 1 is done!"
 
-echo "done! check your input folder for alhabridge output and your output directory for the netork :)"
+# Step 2: Run the network script
+echo "Running: python3 $cwd/src/network_int.py -i $input_directory -o $output_directory_net -t $threshold"
+python3 "$cwd/src/network_int.py" -i "$input_directory" -o "$output_directory_net" -t "$threshold"
+
+echo "Done! Check your input folder for Alphabridge output and your output directory for the network."
+
 
 

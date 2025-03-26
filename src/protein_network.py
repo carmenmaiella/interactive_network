@@ -1,21 +1,36 @@
 #script for obtaining the protein interaction network
 #EVERY NODE IS A PROTEIN
 #EVERY EDGE IS A PHYSICAL INTERECTION BETWEEN THE PROTEINS
-import argparse
-import sys 
-import os
-import pandas as pd
+
+#import required packages
+
 import igraph as ig
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
-import matplotlib.patches as mpatches
-import matplotlib.lines as mlines
 import numpy as np
-import json
-from pyvis.network import Network
 from networkx.readwrite import json_graph;
 
 #FUCNTION USED IN NETWORK WITH NOT MERGIN NODES AND THE PROTEIN==NODE NETWORK
+
+#formatting labels --> display the label nodes as "protein name (form aa,to aa) (form aa,to aa)""
+
+def formatting_labels(s):
+    parts = s.split(" ")
+    result = [parts[0]]  
+    temp_list = []
+
+    for part in parts[1:]:  
+        temp_list.append(part[:-1])
+    for i in range(len(temp_list)-1):
+        if i%2 == 0:
+            temp_list[i]=temp_list[i].strip("(")
+            if temp_list[i] == temp_list[i+1]:
+                result.append(f"({temp_list[i] })")
+            else:
+                result.append(f"({temp_list[i]}-{temp_list[i+1]})")
+    return " ".join(result)
+
+#all the intervals that belong to the same interface --> togheter
 
 def create_new_column_interface_intervals_no_merge(df):
     grouped = df.groupby(["interface"])
@@ -42,28 +57,16 @@ def create_new_column_interface_intervals_no_merge(df):
 
     return df
 
-def formatting_labels(s):
-    parts = s.split(" ")
-    result = [parts[0]]  
-    temp_list = []
+'''MAIN FUNCTION!!!'''
 
-    for part in parts[1:]:  
-        temp_list.append(part[:-1])
-    for i in range(len(temp_list)-1):
-        if i%2 == 0:
-            temp_list[i]=temp_list[i].strip("(")
-            if temp_list[i] == temp_list[i+1]:
-                result.append(f"({temp_list[i] })")
-            else:
-                result.append(f"({temp_list[i]}-{temp_list[i+1]})")
-    return " ".join(result)
-
+ #STEP1--> HAVING THE DF WITH ALL POSSIBLE INFORMATION
 def get_protein_network(df):
     df_interfaces = create_new_column_interface_intervals_no_merge(df)
     df_interfaces["interface_intervals_1_labels"] = df["prot_1"]+" "+ df_interfaces["interface_intervals_1"].apply(lambda x: " ".join(map(str, x)) if isinstance(x, list) else str(x)).astype(str)
     df_interfaces["interface_intervals_1_labels"] = df_interfaces["interface_intervals_1_labels"].apply(formatting_labels)
     df_interfaces["interface_intervals_2_labels"] = df["prot_2"]+ " "+ df_interfaces["interface_intervals_2"].apply(lambda x: " ".join(map(str, x)) if isinstance(x, list) else str(x)).astype(str)
     df_interfaces["interface_intervals_2_labels"] = df_interfaces["interface_intervals_2_labels"].apply(formatting_labels)
+
     # Initialize the dictionary to store proteins and their unique nodes
     protein_labels = {}
 
@@ -89,7 +92,7 @@ def get_protein_network(df):
         if prot_2_interface not in protein_labels[prot_2_id]:  
             protein_labels[prot_2_id].append(prot_2_interface)
 
-    print(f'Protein labels before formatting: {protein_labels}')
+    #print(f'Protein labels before formatting: {protein_labels}')
 
     # Format labels correctly
     for protein in protein_labels:
@@ -108,12 +111,12 @@ def get_protein_network(df):
         # formatted labels --> sring separated by , --> joing them in an unique one
         protein_labels[protein] = ", ".join(formatted_intervals)
 
-    print(f'Protein labels after formatting: {protein_labels}')
+    #print(f'Protein labels after formatting: {protein_labels}')
 
     #orering them --> for having the same color as the other network
     protein_labels_sorted = dict(sorted(protein_labels.items()))
 
-    print(f'Protein labels after sorting: {protein_labels_sorted}')
+    #print(f'Protein labels after sorting: {protein_labels_sorted}')
 
     # INTERACTIONS with name of the protein
     protein_pairs = []
@@ -130,8 +133,8 @@ def get_protein_network(df):
     #print(protein_pairs)
     #print(protein_pairs_unique)
 
-    print("All interactions:", protein_pairs)
-    print("Unique interactions:", protein_pairs_unique)
+    #print("All interactions:", protein_pairs)
+    #print("Unique interactions:", protein_pairs_unique)
 
     # INTERACTIONS with the all label of the protein
     protein_pairs_unique_labels = []
@@ -141,7 +144,7 @@ def get_protein_network(df):
         labels_2 = protein_labels.get(prot2, "No Label")
         protein_pairs_unique_labels.append([labels_1, labels_2])
 
-    print("Unique interactions with labels:", protein_pairs_unique_labels)
+    #print("Unique interactions with labels:", protein_pairs_unique_labels)
     g = ig.Graph()
     number_of_nodes = (len(protein_labels_sorted))
     labels = []
@@ -154,8 +157,8 @@ def get_protein_network(df):
 
     g.vs['label'] = labels
 
-    for vertex in g.vs:     
-        print(f"ID: {vertex.index}, Label: {vertex['label']}")
+    #for vertex in g.vs:     
+    #    print(f"ID: {vertex.index}, Label: {vertex['label']}")
 
     #COLORS 
     # Generate as many unique colors as the number of protein groups
@@ -164,7 +167,7 @@ def get_protein_network(df):
         
     # Assign colors to graph nodes
     g.vs["color"] = colors
-    print(f"node colors{colors}")
+    #print(f"node colors{colors}")
 
     #edges
     edges = []
@@ -173,7 +176,7 @@ def get_protein_network(df):
         source_index = g.vs.find(label=f"{source}").index
         target_index = g.vs.find(label=f"{target}").index
         edges.append((source_index, target_index))
-    print(f"edges :{edges}")
+    #print(f"edges :{edges}")
     g.add_edges(edges)
     #network in network x
     g_networkx = g.to_networkx()

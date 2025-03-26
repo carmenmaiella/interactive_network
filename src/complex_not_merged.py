@@ -1,18 +1,15 @@
 #script for obtaining ONLY THE INTERACTIVE NETWORK WITH NO MERGE(more nodes)
-import argparse
-import sys 
-import os
-import pandas as pd
+#import required packages
 import igraph as ig
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
-import matplotlib.patches as mpatches
-import matplotlib.lines as mlines
 import numpy as np
-import json
-from pyvis.network import Network
 from networkx.readwrite import json_graph;
+
 #FUCNTION USED IN NETWORK WITH MERGING NODES AND NOT MERGIN NODES
+
+#generating eges between the node tht belog to the same protein
+
 def generate_intraprotein_edges(protein_dict):
     edges = []
     for protein, intervals in protein_dict.items():
@@ -25,6 +22,10 @@ def generate_intraprotein_edges(protein_dict):
     return edges
 
 #FUCNTION USED IN NETWORK WITH NOT MERGIN NODES AND THE PROTEIN==NODE NETWORK
+
+#formatting labels --> display the label nodes as "protein name (form aa,to aa) (form aa,to aa)""
+
+
 def formatting_labels(s):
     parts = s.split(" ")
     result = [parts[0]]  
@@ -41,9 +42,11 @@ def formatting_labels(s):
                 result.append(f"({temp_list[i]}-{temp_list[i+1]})")
     return " ".join(result)
 
+
+#all the intervals that belong to the same interface --> togheter
+
 def create_new_column_interface_intervals_no_merge(df):
     grouped = df.groupby(["interface"])
-    
     # List for intervals for each interface (start_1, end_1)
     interface_intervals_1 = [None] * len(df)
     for _, group in grouped:
@@ -53,8 +56,7 @@ def create_new_column_interface_intervals_no_merge(df):
             interface_intervals_1[idx] = intervals
     df["interface_intervals_1"] = interface_intervals_1
 
-    grouped = df.groupby(["interface"])
-    
+    grouped = df.groupby(["interface"]) 
     # List for intervals for each interface (start_2, end_2)
     interface_intervals_2 = [None] * len(df)
     for _, group in grouped:
@@ -66,9 +68,12 @@ def create_new_column_interface_intervals_no_merge(df):
 
     return df
 
-'''MAIN FUNCTION'''
+'''MAIN FUNCTION!!!'''
 def get_protein_network_no_merging(df):
-    #df_interfaces_nomerg --> DF THAT IS USED FOR OBTAINING THE NO MERGED ETWORK (==MORE NODES)
+
+    #STEP1--> HAVING THE DF WITH ALL POSSIBLE INFORMATION
+    #df_interfaces --> DF THAT IS USED FOR OBTAINING THE NO MERGED ETWORK (==MORE NODES)
+    # .apply(lambda x: ...) to convert lists to space-separated strings.
 
     df_interfaces = create_new_column_interface_intervals_no_merge(df)
     # Save the DataFrame with the updated protein names
@@ -77,13 +82,11 @@ def get_protein_network_no_merging(df):
     df_interfaces["interface_intervals_2_labels"] = df["prot_2"]+ " "+ df_interfaces["interface_intervals_2"].apply(lambda x: " ".join(map(str, x)) if isinstance(x, list) else str(x)).astype(str)
     df_interfaces["interface_intervals_2_labels"] = df_interfaces["interface_intervals_2_labels"].apply(formatting_labels)
 
-    #df_interfaces.to_csv(output_csv, index=False)
-
-    #print(df_interfaces)
-    #START TO TAKE INFORMATION FOR PLOTTING
+    
+    #STE2 -> START TO TAKE INFORMATION FOR PLOTTING
 
     # Initialize the dictionary to store proteins and their unique nodes
-    protein_nodes_old = {}
+    protein_nodes = {}
 
     # Iterating through each row of the DataFrame
     
@@ -95,28 +98,27 @@ def get_protein_network_no_merging(df):
         prot_2_interface = row["interface_intervals_2_labels"] 
 
         # Initialize the protein in the dictionary if not already present
-        if prot_1_id not in protein_nodes_old:
-            protein_nodes_old[prot_1_id] = []
-        if prot_2_id not in protein_nodes_old:
-            protein_nodes_old[prot_2_id] = []
+        if prot_1_id not in protein_nodes:
+            protein_nodes[prot_1_id] = []
+        if prot_2_id not in protein_nodes:
+            protein_nodes[prot_2_id] = []
 
         # Add unique intervals for prot_1_id
-        if prot_1_interface not in protein_nodes_old[prot_1_id]:  # Check if the interval is unique
-            protein_nodes_old[prot_1_id].append(prot_1_interface)
+        if prot_1_interface not in protein_nodes[prot_1_id]:  # Check if the interval is unique
+            protein_nodes[prot_1_id].append(prot_1_interface)
 
         # Add unique intervals for prot_2_id
-        if prot_2_interface not in protein_nodes_old[prot_2_id]:  # Check if the interval is unique
-            protein_nodes_old[prot_2_id].append(prot_2_interface)
+        if prot_2_interface not in protein_nodes[prot_2_id]:  # Check if the interval is unique
+            protein_nodes[prot_2_id].append(prot_2_interface)
 
-    print(f'protein nodes old {protein_nodes_old}')
+    #print(f'protein nodes NO SORTED {protein_nodes}')
 
-    protein_nodes = dict(sorted(protein_nodes_old.items()))
-    print(f'protein nodes  {protein_nodes}')
-
-    
+    #sort the protein in order so the olor will be the same in the network
+    protein_nodes_sorted = dict(sorted(protein_nodes.items()))
+    #print(f'protein nodes sorted {protein_nodes_sorted}')
 
     # Calculate the number of unique nodes (intervals) for each protein
-    nodes_for_each_protein = [len(value) for value in protein_nodes.values()]
+    nodes_for_each_protein = [len(value) for value in protein_nodes_sorted.values()]
 
     # INTERACTION BETWEEN DIFFERENT PROTEINS
     inter_protein_interactions = []
@@ -134,7 +136,7 @@ def get_protein_network_no_merging(df):
         inter_protein_interactions.append(interaction)
 
     # Print all protein interactions
-    print(f"All protein interactions: {inter_protein_interactions}")
+    #print(f"All protein interactions: {inter_protein_interactions}")
 
     # To get unique interactions, use a set
     unique_inter_protein_interactions = []
@@ -144,12 +146,12 @@ def get_protein_network_no_merging(df):
             unique_inter_protein_interactions.append(interaction)
 
     # Print unique protein interactions
-    print(f"Unique protein interactions: {unique_inter_protein_interactions}")
+    #print(f"Unique protein interactions: {unique_inter_protein_interactions}")
 
 
     #INTERACTION WHITIN THE SAME PROTEIN
-    edges_intraprpt = generate_intraprotein_edges(protein_nodes)
-    print(f'edges_intraprt {edges_intraprpt}')
+    edges_intraprpt = generate_intraprotein_edges(protein_nodes_sorted)
+    #print(f'edges_intraprt {edges_intraprpt}')
 
     
     #STEP 9 --> PLOTTING
@@ -164,20 +166,20 @@ def get_protein_network_no_merging(df):
         number_of_nodes = number_of_nodes + nodes
         
     #labels--> each node has intervals of aa
-    for key, value in protein_nodes.items():
+    for key, value in protein_nodes_sorted.items():
         for interval_aa_str in value:
             labels.append(interval_aa_str)
 
-    print(f"labels: {labels}")
-    print(f"number of nodes:{number_of_nodes}")
+    #print(f"labels: {labels}")
+    #print(f"number of nodes:{number_of_nodes}")
     
     #adding nodes
     g.add_vertices(number_of_nodes)
     
-    #assign labels to each node (the order follow the dictionary protein_nodes)order
+    #assign labels to each node (the order follow the dictionary protein_nodes_sorted)order
     g.vs['label'] = labels
-    for vertex in g.vs:     
-        print(f"ID: {vertex.index}, Label: {vertex['label']}")
+    #for vertex in g.vs:     
+     #   print(f"ID: {vertex.index}, Label: {vertex['label']}")
 
 
     #COLORS 
@@ -193,7 +195,7 @@ def get_protein_network_no_merging(df):
         
     # Assign colors to graph nodes
     g.vs["color"] = node_colors
-    print(f"node colors{node_colors}")
+   # print(f"node colors{node_colors}")
 
     
     #EDGES
@@ -204,7 +206,7 @@ def get_protein_network_no_merging(df):
         source_index = g.vs.find(label=f"{source}").index
         target_index = g.vs.find(label=f"{target}").index
         edges_diff.append((source_index, target_index))
-    print(f"edges diff:{edges_diff}")
+    #print(f"edges diff:{edges_diff}")
     g.add_edges(edges_diff)
     
     # same protein edges
@@ -237,7 +239,7 @@ def get_protein_network_no_merging(df):
 
    #LAYAOUT
 
-    layout = g.layout("fruchterman_reingold")
+    #layout = g.layout("fruchterman_reingold")
 
     
    #PLOT 
@@ -250,7 +252,7 @@ def get_protein_network_no_merging(df):
 
     #PROTEINS for the legend
     #proteins_leg = []
-    #for key, value in protein_nodes.items():
+    #for key, value in protein_nodes_sorted.items():
     #    proteins_leg.append(key)
 
         #creating the content of the first legend
