@@ -52,7 +52,7 @@ def from_json_to_df(in_dir, threshold):
     # handle situatio where the folder name has complex at the beginning or just the name of the protein
     #result --> just the protein name are kept 
     folder_name = os.path.basename(in_dir)
-    if "omplex" not in folder_name: #so the c can be either C or c + every name that you prefer
+    if ("omplex" not in folder_name) and ("old" not in folder_name): #so the c can be either C or c + every name that you prefer
         folder_name = folder_name
     else:
         folder_name = folder_name.split('_', 1)[1]
@@ -111,7 +111,7 @@ def from_json_to_df(in_dir, threshold):
 
     # Convert the list to a DataFrame, THIS IS THE ONE THAT IS NEEDED FOR BOTH
     df = pd.DataFrame(all_data)
-    #print(df)
+    print(df)
 
 
     # Replace letters with protein names in 'prot_1' and 'prot_2' columns
@@ -125,7 +125,7 @@ def from_json_to_df(in_dir, threshold):
 
     for column in ['prot_1', 'prot_2']:
         df[column] = df[column].apply(convert_protein)
-    #print(df)
+    print(df)
     return df
 
 
