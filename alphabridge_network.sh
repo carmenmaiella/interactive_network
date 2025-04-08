@@ -53,7 +53,7 @@ echo "Step 1 is done!"
 echo "Running: python3 $cwd/src/network_int.py -i $input_directory -o $output_directory_net -t $threshold"
 python3 "$cwd/src/network_int.py" -i "$input_directory" -o "$output_directory_net" -t "$threshold"
 
-echo "Done! Check your input folder for Alphabridge output and your output directory for the network."
+echo "Done! Check your input folder for Alphabridge output and your output directory for the network :)"
 
 
 

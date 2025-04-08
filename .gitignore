@@ -3,3 +3,4 @@ test
 src/binary_interactions.py
 output
 alphabridge_network_with_binary.sh
+environement_old.yml

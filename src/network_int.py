@@ -153,7 +153,7 @@ def main():
     combined_networks = {
         "network_not_merged": j_not_merged,
         "network_merged": j_merged,
-        "protin network": j_proteins 
+        "protein_network": j_proteins 
     }
 
     # Save to a JSON file

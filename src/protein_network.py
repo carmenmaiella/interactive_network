@@ -167,6 +167,7 @@ def get_protein_network(df):
         
     # Assign colors to graph nodes
     g.vs["color"] = colors
+
     #print(f"node colors{colors}")
 
     #edges
@@ -176,8 +177,12 @@ def get_protein_network(df):
         source_index = g.vs.find(label=f"{source}").index
         target_index = g.vs.find(label=f"{target}").index
         edges.append((source_index, target_index))
+
     #print(f"edges :{edges}")
     g.add_edges(edges)
+    g.es['color'] = "black"
+    g.es["label"] = "physical interaction"
+
     #network in network x
     g_networkx = g.to_networkx()
     

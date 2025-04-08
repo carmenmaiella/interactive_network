@@ -138,4 +138,3 @@ dependencies:
       - markupsafe==3.0.2
       - pdbecif==1.5
       - pyvis==0.3.2
-prefix: /local_data/carmen/miniconda3/envs/network

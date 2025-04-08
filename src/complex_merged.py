@@ -389,6 +389,7 @@ def get_protein_network_merging(df):
     g.es['weight'] = 500
     g.es['color'] = "black"
     g.es["width"] = 1.5
+    g.es["label"] = "interface"
     #iterating all ossible edges
     for edge in edges_same:
         #for every tuple (=edge inside the list) we take the FROM node and the TO node
@@ -401,6 +402,8 @@ def get_protein_network_merging(df):
         g.es[edges_id]["weight"] = 3
         g.es[edges_id]["color"] = node_color  #we give for each edge the color of his node
         g.es[edges_id]["width"] = 0.5
+        g.es[edges_id]["label"] = "intraface"
+
 
 
    #LAYAOUT
