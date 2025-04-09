@@ -33,8 +33,10 @@ def parse_args():
     parser.add_argument('-o', dest='o_dir', default='',
                         help='path to a directory where output folder are stored')
     
-    parser.add_argument('-t', dest= 'threshold', choices=['0.5', '0.75', '0.9'] , default='0.9',
-                        help='output from different threshold. Options: 0.5, 0.7, 0.75, 0.9')
+    parser.add_argument('-t', dest='threshold', nargs='+', choices=['0.5', '0.75', '0.9'],
+    default=['0.9'],help='Output from different thresholds. Options: 0.5, 0.75, 0.9. You can pass multiple values separated by space.'
+)
+
     
     #parser.add_argument('-tab', dest='table', type=lambda x: x.lower() == 'true', default=False,
     #                    help='Save or not the comparison dataframe. Options: True or False')
@@ -51,15 +53,15 @@ def from_json_to_df(in_dir, threshold):
         
     # handle situatio where the folder name has complex at the beginning or just the name of the protein
     #result --> just the protein name are kept 
-    folder_name = os.path.basename(in_dir)
-    if "omplex" not in folder_name: #so the c can be either C or c + every name that you prefer
-        folder_name = folder_name
-    else:
-        folder_name = folder_name.split('_', 1)[1]
+    #folder_name = os.path.basename(in_dir)
+    #if "omplex" not in folder_name: #so the c can be either C or c + every name that you prefer
+    #    folder_name = folder_name
+    #else:
+    #    folder_name = folder_name.split('_', 1)[1]
 
     # Extract protein names from the folder, and assign each protein a letter
-    proteins = folder_name.split('_')  # Split the folder name to get protein names
-    protein_to_letter = {protein: chr(65 + i) for i, protein in enumerate(proteins)}
+    #proteins = folder_name.split('_')  # Split the folder name to get protein names
+    #protein_to_letter = {protein: chr(65 + i) for i, protein in enumerate(proteins)}
 
     # Traverse through the input directory to check all subdirectories
     for subdir in os.listdir(in_dir):
@@ -87,6 +89,20 @@ def from_json_to_df(in_dir, threshold):
                         json_data = json.load(json_file)
 
                     # Process JSON data and store in a list
+                    #from auth to label
+                    auth2label = {}
+                    chains = json_data['structure'][0]['chains']
+                    for entity_type, rec_list in chains.items():
+                        for rec in rec_list:
+                            #print(rec)
+                            #print(rec['auth_asym_id'], rec['label_asym_id'])
+                            auth_asym_id = rec['auth_asym_id']
+                            label_asym_id = rec['label_asym_id']
+                            if not auth_asym_id in auth2label:
+                                auth2label[auth_asym_id] = str()
+                            auth2label[auth_asym_id] = label_asym_id
+                    #from label to auth
+                    label2auth = {value:key for key, value in auth2label.items()}
                     rows = []
                     if "interactions" in json_data:
                         for interaction in json_data["interactions"]:
@@ -95,7 +111,7 @@ def from_json_to_df(in_dir, threshold):
                                     interface_name = interface["interface_name"]
                                     for link in interface["links"]:
                                         row = {
-                                            "folder_name": folder_name,
+                                            #folder_name": folder_name,
                                             "interface": interface_name,
                                             "prot_1": link["first"]["asym_id"],
                                             "start_1": link["first"]["link_range"]["start"],
@@ -108,25 +124,27 @@ def from_json_to_df(in_dir, threshold):
 
                     # Add rows to the main list
                     all_data.extend(rows)
+                    #create the df for storing the score
+                    pairwise_interaction = json_data['structure'][0]['pairwise_interaction']
+                    #print(pairwise_interaction)
+                    df_pairwise_interaction = pd.DataFrame(pairwise_interaction)
+                    #print(df_pairwise_interaction)
+ 
+    
+    #print(auth2label)
+    #print(label2auth)
+
 
     # Convert the list to a DataFrame, THIS IS THE ONE THAT IS NEEDED FOR BOTH
     df = pd.DataFrame(all_data)
     #print(df)
 
 
-    # Replace letters with protein names in 'prot_1' and 'prot_2' columns
-    #design a fucnon that does that
-    def convert_protein(protein_code):
-    # Loop through the dictionary to find a match
-        for protein, letter in protein_to_letter.items():
-            if letter == protein_code:
-                return protein  # Return the matching protein name
-        return protein_code  # If no match is found, return the original value
-
-    for column in ['prot_1', 'prot_2']:
-        df[column] = df[column].apply(convert_protein)
+    # form auth to label for whatever is not a protein
+    #for column in ['prot_1', 'prot_2']:
+    #    df[column] = df[column].replace(auth2label)
     #print(df)
-    return df
+    return df, label2auth, df_pairwise_interaction
 
 
 
@@ -135,30 +153,36 @@ def from_json_to_df(in_dir, threshold):
 def main():
     args = parse_args()
     in_dir = args.in_dir
-    threshold = float(args.threshold)
+    threshold = [float(t) for t in args.threshold]
     if not os.path.exists(args.o_dir):
         os.makedirs(args.o_dir)
-    # funtion that creates the df that will be used as an inpt for the next fuction
-    df = from_json_to_df(in_dir, threshold)
-    #function --> INFORMATION FOR THE NETWORK WITH MORE NODES(NO MERGED)
-    j_not_merged = no_merg.get_protein_network_no_merging(df)
-    print("FINISHED THE NOT MERGED NETWORK")
-    #function --> INFORMATION FOR THE NETWORK WITH LESS NODES(MERGED)
-    j_merged = merg.get_protein_network_merging(df)
-    print("FINISHED THE MERGED NETWORK")
-    #function --> INFORMATION FOR THE NETWORK WHERE NOES == PROTEIN
-    j_proteins = protein_net.get_protein_network(df)
-    print("FINISHED THE WHOLE PROTEIN NETWORK")
-    # Combine them into a single dictionary
-    combined_networks = {
-        "network_not_merged": j_not_merged,
-        "network_merged": j_merged,
-        "protein_network": j_proteins 
-    }
+    all_threshold = {}
+    #iterate for every possible threshold
+    for th in threshold:
+        #print(f"th:{th}")
+        # funtion that creates the df that will be used as an inpt for the next fuction
+        df, dit, df_pairwise_interaction = from_json_to_df(in_dir, th)
+        #function --> INFORMATION FOR THE NETWORK WITH MORE NODES(NO MERGED)
+        j_not_merged = no_merg.get_protein_network_no_merging(df,dit)
+        print("FINISHED THE NOT MERGED NETWORK")
+        #function --> INFORMATION FOR THE NETWORK WITH LESS NODES(MERGED)
+        #j_merged = merg.get_protein_network_merging(df)
+        #print("FINISHED THE MERGED NETWORK")
+        #function --> INFORMATION FOR THE NETWORK WHERE NOES == PROTEIN
+        j_proteins = protein_net.get_protein_network(df,dit,df_pairwise_interaction,th)
+        print("FINISHED THE WHOLE PROTEIN NETWORK")
+        # Combine them into a single dictionary
+        combined_networks = {"cut-off": th,
+            "network_not_merged": j_not_merged,
+        # "network_merged": j_merged,
+            "protein_network": j_proteins 
+        }
+        #combine everything
+        all_threshold[f"network at {th}"] = combined_networks
 
     # Save to a JSON file
     with open(f"{args.o_dir}/combined_networks.json", "w") as f:
-        json.dump(combined_networks, f, indent=4)
+        json.dump(all_threshold, f, indent=4)
 
 if __name__ == '__main__':
     main()

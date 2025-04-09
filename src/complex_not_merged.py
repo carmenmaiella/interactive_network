@@ -69,13 +69,17 @@ def create_new_column_interface_intervals_no_merge(df):
     return df
 
 '''MAIN FUNCTION!!!'''
-def get_protein_network_no_merging(df):
+def get_protein_network_no_merging(df,dit):
 
     #STEP1--> HAVING THE DF WITH ALL POSSIBLE INFORMATION
     #df_interfaces --> DF THAT IS USED FOR OBTAINING THE NO MERGED ETWORK (==MORE NODES)
     # .apply(lambda x: ...) to convert lists to space-separated strings.
 
     df_interfaces = create_new_column_interface_intervals_no_merge(df)
+    df['prot_1_lab'] = df['prot_1']
+    df['prot_2_lab'] = df['prot_2']
+    for column in ['prot_1_lab', 'prot_2_lab']:
+        df[column]= df[column].replace(dit)
     # Save the DataFrame with the updated protein names
     df_interfaces["interface_intervals_1_labels"] = df["prot_1"]+" "+ df_interfaces["interface_intervals_1"].apply(lambda x: " ".join(map(str, x)) if isinstance(x, list) else str(x)).astype(str)
     df_interfaces["interface_intervals_1_labels"] = df_interfaces["interface_intervals_1_labels"].apply(formatting_labels)
@@ -115,7 +119,7 @@ def get_protein_network_no_merging(df):
 
     #sort the protein in order so the olor will be the same in the network
     protein_nodes_sorted = dict(sorted(protein_nodes.items()))
-    #print(f'protein nodes sorted {protein_nodes_sorted}')
+    print(f'protein nodes sorted {protein_nodes_sorted}')
 
     # Calculate the number of unique nodes (intervals) for each protein
     nodes_for_each_protein = [len(value) for value in protein_nodes_sorted.values()]
@@ -222,7 +226,7 @@ def get_protein_network_no_merging(df):
     g.es['weight'] = 500
     g.es['color'] = "black"
     g.es["width"] = 1.5
-    g.es["label"] = "interface"
+    #g.es["label"] = "interface"
     #iterating all ossible edges
     for edge in edges_same:
         #for every tuple (=edge inside the list) we take the FROM node and the TO node
@@ -236,7 +240,7 @@ def get_protein_network_no_merging(df):
         g.es[edges_id]["weight"] = 3
         g.es[edges_id]["color"] = node_color  #we give for each edge the color of his node
         g.es[edges_id]["width"] = 0.5
-        g.es[edges_id]["label"] = "intraface"
+        #g.es[edges_id]["label"] = "intraface"
 
 
    #LAYAOUT
