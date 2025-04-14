@@ -60,11 +60,11 @@ def create_new_column_interface_intervals_no_merge(df):
 '''MAIN FUNCTION!!!'''
 
  #STEP1--> HAVING THE DF WITH ALL POSSIBLE INFORMATION
-def get_protein_network(df,dit,df_pairwise_interaction,treshold):
+def get_protein_network(df,label2auth,df_pairwise_interaction,threshold,auth2label):
     df['prot_1_lab'] = df['prot_1']
     df['prot_2_lab'] = df['prot_2']
     for column in ['prot_1_lab', 'prot_2_lab']:
-        df[column]= df[column].replace(dit)
+        df[column]= df[column].replace(label2auth)
     #print(df)
     # Initialize the dictionary to store proteins and their unique nodes
     protein_labels = {}
@@ -182,6 +182,39 @@ def get_protein_network(df,dit,df_pairwise_interaction,treshold):
     #print(f"edges :{edges}")
     g.add_edges(edges)
     g.es['color'] = "black"
+    unique_id_dict = {}
+    #adding the unique identifier for the interface as the attribute type for the edges/links of the network
+    #creating a dictionary for storing them
+    for _, row in df.iterrows():
+        from_prefix_df = row['prot_1']
+        to_prefix_df = row['prot_2']
+        unique_identifier = row['interface_id']
+
+        key = (from_prefix_df, to_prefix_df)
+
+        if key not in unique_id_dict:
+            unique_id_dict[key] = []
+
+        if unique_identifier not in unique_id_dict[key]:  # avoid duplicates
+            unique_id_dict[key].append(unique_identifier)
+    for edge in edges:  
+        source_index, target_index = edge
+
+        source_label_raw = g.vs[source_index]["label"]
+        target_label_raw = g.vs[target_index]["label"]
+
+        source_label = auth2label.get(source_label_raw, source_label_raw)
+        target_label = auth2label.get(target_label_raw, target_label_raw)
+
+        edge_key = (source_label, target_label)
+
+        if edge_key in unique_id_dict:
+            edge_id = g.get_eid(source_index, target_index)
+            interface_ids = unique_id_dict[edge_key]
+
+            g.es[edge_id]["type"] = ",".join(interface_ids)
+
+    #print(unique_id_dict)
     #g.es["label"] = "physical interaction"
     for _, row in df_pairwise_interaction.iterrows():
         from_prefix = row['first']
@@ -197,7 +230,7 @@ def get_protein_network(df,dit,df_pairwise_interaction,treshold):
         
             if from_prefix in source_label and to_prefix in target_label:
                 edge_id = g.get_eid(source_index, target_index)
-                if score >= treshold:
+                if score >= threshold:
                     g.es[edge_id]["label"] = score
                     #edges_labels =g.es[edge_id]["label"]
                     #print(g.es[edge_id]["label"])
@@ -207,6 +240,8 @@ def get_protein_network(df,dit,df_pairwise_interaction,treshold):
     
     #informaton for the json file
     jobs = json_graph.node_link_data(g_networkx)
+    for link in jobs['links']:
+        link['type'] = link['type'].split(",")
 
     return jobs
 

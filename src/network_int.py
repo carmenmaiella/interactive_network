@@ -113,6 +113,7 @@ def from_json_to_df(in_dir, threshold):
                                         row = {
                                             #folder_name": folder_name,
                                             "interface": interface_name,
+                                            "interface_id": interface["interface_id"],
                                             "prot_1": link["first"]["asym_id"],
                                             "start_1": link["first"]["link_range"]["start"],
                                             "end_1": link["first"]["link_range"]["end"],
@@ -144,7 +145,7 @@ def from_json_to_df(in_dir, threshold):
     #for column in ['prot_1', 'prot_2']:
     #    df[column] = df[column].replace(auth2label)
     #print(df)
-    return df, label2auth, df_pairwise_interaction
+    return df, label2auth, df_pairwise_interaction, auth2label
 
 
 
@@ -161,15 +162,15 @@ def main():
     for th in threshold:
         #print(f"th:{th}")
         # funtion that creates the df that will be used as an inpt for the next fuction
-        df, dit, df_pairwise_interaction = from_json_to_df(in_dir, th)
+        df, label2auth, df_pairwise_interaction, auth2label = from_json_to_df(in_dir, th)
         #function --> INFORMATION FOR THE NETWORK WITH MORE NODES(NO MERGED)
-        j_not_merged = no_merg.get_protein_network_no_merging(df,dit)
+        j_not_merged = no_merg.get_protein_network_no_merging(df,label2auth)
         print("FINISHED THE NOT MERGED NETWORK")
         #function --> INFORMATION FOR THE NETWORK WITH LESS NODES(MERGED)
         #j_merged = merg.get_protein_network_merging(df)
         #print("FINISHED THE MERGED NETWORK")
         #function --> INFORMATION FOR THE NETWORK WHERE NOES == PROTEIN
-        j_proteins = protein_net.get_protein_network(df,dit,df_pairwise_interaction,th)
+        j_proteins = protein_net.get_protein_network(df,label2auth,df_pairwise_interaction,th,auth2label)
         print("FINISHED THE WHOLE PROTEIN NETWORK")
         # Combine them into a single dictionary
         combined_networks = {"cut-off": th,
