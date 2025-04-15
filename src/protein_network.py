@@ -60,7 +60,7 @@ def create_new_column_interface_intervals_no_merge(df):
 '''MAIN FUNCTION!!!'''
 
  #STEP1--> HAVING THE DF WITH ALL POSSIBLE INFORMATION
-def get_protein_network(df):
+def get_protein_network(df, label_color_dict):
     df_interfaces = create_new_column_interface_intervals_no_merge(df)
     df_interfaces["interface_intervals_1_labels"] = df["prot_1"]+" "+ df_interfaces["interface_intervals_1"].apply(lambda x: " ".join(map(str, x)) if isinstance(x, list) else str(x)).astype(str)
     df_interfaces["interface_intervals_1_labels"] = df_interfaces["interface_intervals_1_labels"].apply(formatting_labels)
@@ -161,11 +161,20 @@ def get_protein_network(df):
     #    print(f"ID: {vertex.index}, Label: {vertex['label']}")
 
     #COLORS 
-    # Generate as many unique colors as the number of protein groups
-    cmap = plt.get_cmap("rainbow") 
-    colors = [mcolors.rgb2hex(cmap(i)) for i in np.linspace(0, 1, number_of_nodes)]
-        
     # Assign colors to graph nodes
+    colors = []
+
+    for v in g.vs:
+        label = v["label"]
+        found_color = "gray"  #dafault color
+
+        for key_letter, color in label_color_dict.items():
+            if label.startswith(key_letter):
+                found_color = color
+                break 
+
+        colors.append(found_color)
+
     g.vs["color"] = colors
 
     #print(f"node colors{colors}")

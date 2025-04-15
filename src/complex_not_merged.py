@@ -69,7 +69,7 @@ def create_new_column_interface_intervals_no_merge(df):
     return df
 
 '''MAIN FUNCTION!!!'''
-def get_protein_network_no_merging(df):
+def get_protein_network_no_merging(df, label_color_dict):
 
     #STEP1--> HAVING THE DF WITH ALL POSSIBLE INFORMATION
     #df_interfaces --> DF THAT IS USED FOR OBTAINING THE NO MERGED ETWORK (==MORE NODES)
@@ -183,18 +183,22 @@ def get_protein_network_no_merging(df):
 
 
     #COLORS 
-    # Generate as many unique colors as the number of protein groups
-    num_proteins = len(nodes_for_each_protein)
-    cmap = plt.get_cmap("rainbow") 
-    colors = [mcolors.rgb2hex(cmap(i)) for i in np.linspace(0, 1, num_proteins)]
-    
-    # Assign colors to nodes based on their protein group
-    node_colors = []
-    for protein_index, size in enumerate(nodes_for_each_protein):
-        node_colors.extend([colors[protein_index]] * size) 
         
     # Assign colors to graph nodes
-    g.vs["color"] = node_colors
+    colors = []
+
+    for v in g.vs:
+        label = v["label"]
+        found_color = "gray"  #dafault color
+
+        for key_letter, color in label_color_dict.items():
+            if label.startswith(key_letter):
+                found_color = color
+                break 
+
+        colors.append(found_color)
+
+    g.vs["color"] = colors
    # print(f"node colors{node_colors}")
 
     

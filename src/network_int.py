@@ -15,6 +15,9 @@ import sys
 import os
 import pandas as pd
 import json
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+import numpy as np
 
 #running the script form the command line
 
@@ -33,8 +36,9 @@ def parse_args():
     parser.add_argument('-o', dest='o_dir', default='',
                         help='path to a directory where output folder are stored')
     
-    parser.add_argument('-t', dest= 'threshold', choices=['0.5', '0.75', '0.9'] , default='0.9',
-                        help='output from different threshold. Options: 0.5, 0.7, 0.75, 0.9')
+    parser.add_argument('-t', dest='threshold', nargs='+', choices=['0.5', '0.75', '0.9'],
+    default=['0.9'],help='Output from different thresholds. Options: 0.5, 0.75, 0.9. You can pass multiple values separated by space.'
+)
     
     #parser.add_argument('-tab', dest='table', type=lambda x: x.lower() == 'true', default=False,
     #                    help='Save or not the comparison dataframe. Options: True or False')
@@ -87,6 +91,20 @@ def from_json_to_df(in_dir, threshold):
                         json_data = json.load(json_file)
 
                     # Process JSON data and store in a list
+                    #from auth to label
+                    auth2label = {}
+                    chains = json_data['structure'][0]['chains']
+                    for entity_type, rec_list in chains.items():
+                        for rec in rec_list:
+                            #print(rec)
+                            #print(rec['auth_asym_id'], rec['label_asym_id'])
+                            auth_asym_id = rec['auth_asym_id']
+                            label_asym_id = rec['label_asym_id']
+                            if not auth_asym_id in auth2label:
+                                auth2label[auth_asym_id] = str()
+                            auth2label[auth_asym_id] = label_asym_id
+                    #from label to auth
+                    label2auth = {value:key for key, value in auth2label.items()}
                     rows = []
                     if "interactions" in json_data:
                         for interaction in json_data["interactions"]:
@@ -126,7 +144,7 @@ def from_json_to_df(in_dir, threshold):
     for column in ['prot_1', 'prot_2']:
         df[column] = df[column].apply(convert_protein)
     print(df)
-    return df
+    return df, label_color_dict
 
 
 
@@ -135,30 +153,36 @@ def from_json_to_df(in_dir, threshold):
 def main():
     args = parse_args()
     in_dir = args.in_dir
-    threshold = float(args.threshold)
+    threshold = [float(t) for t in args.threshold]
     if not os.path.exists(args.o_dir):
         os.makedirs(args.o_dir)
-    # funtion that creates the df that will be used as an inpt for the next fuction
-    df = from_json_to_df(in_dir, threshold)
-    #function --> INFORMATION FOR THE NETWORK WITH MORE NODES(NO MERGED)
-    j_not_merged = no_merg.get_protein_network_no_merging(df)
-    print("FINISHED THE NOT MERGED NETWORK")
-    #function --> INFORMATION FOR THE NETWORK WITH LESS NODES(MERGED)
-    j_merged = merg.get_protein_network_merging(df)
-    print("FINISHED THE MERGED NETWORK")
-    #function --> INFORMATION FOR THE NETWORK WHERE NOES == PROTEIN
-    j_proteins = protein_net.get_protein_network(df)
-    print("FINISHED THE WHOLE PROTEIN NETWORK")
-    # Combine them into a single dictionary
-    combined_networks = {
-        "network_not_merged": j_not_merged,
-        "network_merged": j_merged,
-        "protein_network": j_proteins 
-    }
+    all_threshold = {}
+    #iterate for every possible threshold
+    for th in threshold:
+        #print(f"th:{th}")
+        # funtion that creates the df that will be used as an inpt for the next fuction
+        df, label_color_dict = from_json_to_df(in_dir, th)
+        #function --> INFORMATION FOR THE NETWORK WITH MORE NODES(NO MERGED)
+        j_not_merged = no_merg.get_protein_network_no_merging(df,label_color_dict)
+        print("FINISHED THE NOT MERGED NETWORK")
+        #function --> INFORMATION FOR THE NETWORK WITH LESS NODES(MERGED)
+        j_merged = merg.get_protein_network_merging(df,label_color_dict)
+        print("FINISHED THE MERGED NETWORK")
+        #function --> INFORMATION FOR THE NETWORK WHERE NOES == PROTEIN
+        j_proteins = protein_net.get_protein_network(df,label_color_dict)
+        print("FINISHED THE WHOLE PROTEIN NETWORK")
+        # Combine them into a single dictionary
+        combined_networks = {"cut-off": th,
+            "network_not_merged": j_not_merged,
+            "network_merged": j_merged,
+            "protein_network": j_proteins 
+        }
+        #combine everything
+        all_threshold[f"network at {th}"] = combined_networks
 
     # Save to a JSON file
-    with open(f"{args.o_dir}/combined_networks.json", "w") as f:
-        json.dump(combined_networks, f, indent=4)
+    with open(f"{args.o_dir}/combined_networks_check_colors.json", "w") as f:
+        json.dump(all_threshold, f, indent=4)
 
 if __name__ == '__main__':
     main()

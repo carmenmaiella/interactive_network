@@ -145,7 +145,7 @@ def check_overlapping_interfaces(inte_1, inte_2):
 
 
 '''MAIN FUNCTION '''
-def get_protein_network_merging(df):
+def get_protein_network_merging(df, label_color_dict):
     #STEP 2 --> FROM the BIG dataframe TO create SMALL dayaframe for a sigle protein
     prot_names = set(df['prot_1']).union(set(df['prot_2']))
     df['original_index'] = df.index
@@ -350,18 +350,21 @@ def get_protein_network_merging(df):
 
 
     #COLORS 
-    # Generate as many unique colors as the number of protein groups
-    num_proteins = len(nodes_for_each_protein)
-    cmap = plt.get_cmap("rainbow") 
-    colors = [mcolors.rgb2hex(cmap(i)) for i in np.linspace(0, 1, num_proteins)]
-    
-    # Assign colors to nodes based on their protein group
-    node_colors = []
-    for protein_index, size in enumerate(nodes_for_each_protein):
-        node_colors.extend([colors[protein_index]] * size) 
-        
     # Assign colors to graph nodes
-    g.vs["color"] = node_colors
+    colors = []
+
+    for v in g.vs:
+        label = v["label"]
+        found_color = "gray"  #dafault color
+
+        for key_letter, color in label_color_dict.items():
+            if label.startswith(key_letter):
+                found_color = color
+                break 
+
+        colors.append(found_color)
+
+    g.vs["color"] = colors
     #print(f"node colors{node_colors}")
 
     
