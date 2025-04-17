@@ -163,21 +163,25 @@ def main():
         #print(f"th:{th}")
         # funtion that creates the df that will be used as an inpt for the next fuction
         df, label2auth, df_pairwise_interaction, auth2label = from_json_to_df(in_dir, th)
-        #function --> INFORMATION FOR THE NETWORK WITH MORE NODES(NO MERGED)
-        j_not_merged = no_merg.get_protein_network_no_merging(df,label2auth)
-        print("FINISHED THE NOT MERGED NETWORK")
-        #function --> INFORMATION FOR THE NETWORK WITH LESS NODES(MERGED)
-        #j_merged = merg.get_protein_network_merging(df)
-        #print("FINISHED THE MERGED NETWORK")
-        #function --> INFORMATION FOR THE NETWORK WHERE NOES == PROTEIN
-        j_proteins = protein_net.get_protein_network(df,label2auth,df_pairwise_interaction,th,auth2label)
-        print("FINISHED THE WHOLE PROTEIN NETWORK")
-        # Combine them into a single dictionary
-        combined_networks = {"cut-off": th,
-            "network_not_merged": j_not_merged,
-        # "network_merged": j_merged,
-            "protein_network": j_proteins 
-        }
+        #checking for empity df --> no interaction are predicted
+        if not df.empty:
+            #function --> INFORMATION FOR THE NETWORK WITH MORE NODES(NO MERGED)
+            j_not_merged = no_merg.get_protein_network_no_merging(df,label2auth)
+            print("FINISHED THE NOT MERGED NETWORK")
+            #function --> INFORMATION FOR THE NETWORK WITH LESS NODES(MERGED)
+            #j_merged = merg.get_protein_network_merging(df)
+            #print("FINISHED THE MERGED NETWORK")
+            #function --> INFORMATION FOR THE NETWORK WHERE NOES == PROTEIN
+            j_proteins = protein_net.get_protein_network(df,label2auth,df_pairwise_interaction,th,auth2label)
+            print("FINISHED THE WHOLE PROTEIN NETWORK")
+            # Combine them into a single dictionary
+            combined_networks = {"cut-off": th,
+                "network_not_merged": j_not_merged,
+            # "network_merged": j_merged,
+                "protein_network": j_proteins 
+            }
+        else:
+            combined_networks = {}
         #combine everything
         all_threshold[f"network at {th}"] = combined_networks
 
