@@ -16,8 +16,7 @@ function createNetwork(network) {
     color: d.color,
     weight: d.weight,
     width: d.width,
-    label: d.label, 
-    unique_id: d.type|| ''
+    label: d.label || ''
   }));
 
   const simulation = d3.forceSimulation(nodes)
@@ -26,19 +25,30 @@ function createNetwork(network) {
     .force("center", d3.forceCenter(width / 2, height / 2))
     .on("tick", ticked);
 
+  simulation.alpha(1).restart();
+  setTimeout(() => simulation.stop(), 3000);
+
   const svg = d3.create("svg")
     .attr("width", width)
     .attr("height", height)
     .attr("viewBox", [0, 0, width, height])
     .attr("style", "max-width: 100%; height: auto;");
 
-  const link = svg.selectAll("line")
+  const containerGroup = svg.append("g");
+
+  svg.call(d3.zoom()
+    .scaleExtent([0.1, 5])
+    .on("zoom", (event) => {
+      containerGroup.attr("transform", event.transform);
+    }));
+
+  const link = containerGroup.selectAll("line")
     .data(links)
     .enter().append("line")
     .style("stroke", d => d.color)
     .style("stroke-width", d => d.width);
 
-  const linkLabels = svg.selectAll(".link-label")
+  const linkLabels = containerGroup.selectAll(".link-label")
     .data(links)
     .enter().append("text")
     .attr("class", "link-label")
@@ -49,7 +59,7 @@ function createNetwork(network) {
     .style("pointer-events", "none")
     .text(d => d.label);
 
-  const node = svg.selectAll("circle")
+  const node = containerGroup.selectAll("circle")
     .data(nodes)
     .enter().append("circle")
     .attr("r", 8)
@@ -59,7 +69,8 @@ function createNetwork(network) {
 
   node.call(d3.drag()
     .on("start", dragstarted)
-    .on("drag", dragged));
+    .on("drag", dragged)
+    .on("end", dragended));
 
   function ticked() {
     link
@@ -78,7 +89,7 @@ function createNetwork(network) {
   }
 
   function dragstarted(event) {
-    if (!event.active) simulation.alphaTarget(0.3).restart();
+    simulation.alphaTarget(0.3).restart();
     event.subject.fx = event.subject.x;
     event.subject.fy = event.subject.y;
   }
@@ -86,6 +97,13 @@ function createNetwork(network) {
   function dragged(event) {
     event.subject.fx = event.x;
     event.subject.fy = event.y;
+  }
+
+  function dragended(event) {
+    event.subject.fx = null;
+    event.subject.fy = null;
+    simulation.alphaTarget(0);
+    simulation.stop();
   }
 
   document.getElementById("container").innerHTML = '';
@@ -101,14 +119,13 @@ document.getElementById('file-selector').addEventListener('change', (event) => {
         fullData = JSON.parse(e.target.result);
 
         const cutoffSelect = document.getElementById('cutoff-select');
-        cutoffSelect.innerHTML = ''; 
+        cutoffSelect.innerHTML = '';
         Object.keys(fullData).forEach(key => {
           const option = document.createElement("option");
           option.value = key;
           option.textContent = key;
           cutoffSelect.appendChild(option);
         });
-
       } catch (error) {
         alert('Error parsing the JSON file. Please check the format.');
       }
@@ -128,4 +145,4 @@ document.getElementById("render-btn").addEventListener("click", () => {
   } else {
     alert("Network data not found for this combination.");
   }
-})
+});
