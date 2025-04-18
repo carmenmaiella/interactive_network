@@ -75,6 +75,7 @@ def from_json_to_df(in_dir, threshold):
         if "AlphaBridge" in subdir:
             # Case 1: "AlphaBridge" is an immediate subdirectory of `in_dir`
             alphabridge_path = subdir_path
+            #print(alphabridge_path)
         #THIS WAS FOR THE BINARY INTERACTION, FOR NOW I PUT IT COMMENTED    
         #else:
             # Case 2: "AlphaBridge" is inside another subdirectory
@@ -83,10 +84,13 @@ def from_json_to_df(in_dir, threshold):
         # Process if the "AlphaBridge" directory exists
         if os.path.isdir(alphabridge_path):
             for file in os.listdir(alphabridge_path):
-                if file.endswith(".json"):
+                if file.endswith("alphabridge_data.json"):
                     json_file_path = os.path.join(alphabridge_path, file)
+                    print(json_file_path)
                     with open(json_file_path, 'r') as json_file:
                         json_data = json.load(json_file)
+                        #print(type(json_data))
+
 
                     # Process JSON data and store in a list
                     #from auth to label
@@ -157,6 +161,7 @@ def main():
     threshold = [float(t) for t in args.threshold]
     if not os.path.exists(args.o_dir):
         os.makedirs(args.o_dir)
+        
     all_threshold = {}
     #iterate for every possible threshold
     for th in threshold:
@@ -184,6 +189,8 @@ def main():
             combined_networks = {}
         #combine everything
         all_threshold[f"network at {th}"] = combined_networks
+        print("combined")
+        print(args.o_dir)
 
     # Save to a JSON file
     with open(f"{args.o_dir}/combined_networks.json", "w") as f:

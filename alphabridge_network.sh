@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 
-# Check if all arguments are provided
-if [ "$#" -ne 3 ]; then
-    echo "Usage: $0 <input_directory> <threshold> <output_directory_net>"
+# Check if at least 3 arguments are provided
+if [ "$#" -lt 3 ]; then
+    echo "Usage: $0 <input_directory> <threshold1> [<threshold2> ...] <output_directory_net>"
     exit 1
 fi
 
 # Initialize variables
 input_directory="$1"
-threshold=$(echo "$2" | xargs) # Remove unwanted spaces
-output_directory_net="$3"
+output_directory_net="${@: -1}"  # Last argument
+threshold_list=("${@:2:$#-2}")   # All arguments except first and last
 
 # Ensure the output directory exists
 mkdir -p "$output_directory_net"
@@ -24,11 +24,11 @@ fi
 cwd=$(pwd)
 echo "Current working directory: $cwd"
 
-#Parse the config file content as a variable
+# Parse the config file content as a variable
 # Read the path from the .ini file
 alphabridge_path=$(grep '^alphabridge_path' config_alphabridge_path.ini | cut -d '=' -f 2 | xargs)
 
-#PRINT the alphabridge path to verify it's being extracted correctly
+# PRINT the alphabridge path to verify it's being extracted correctly
 echo "Alphabridge path extracted: $alphabridge_path"
 
 # Check if the path is valid
@@ -50,10 +50,11 @@ python3 "$alphabridge_path" -i "$input_directory"
 echo "Step 1 is done!"
 
 # Step 2: Run the network script
-echo "Running: python3 $cwd/src/network_int.py -i $input_directory -o $output_directory_net -t $threshold"
-python3 "$cwd/src/network_int.py" -i "$input_directory" -o "$output_directory_net" -t "$threshold"
+echo "Running: python3 $cwd/src/network_int.py -i $input_directory -o $output_directory_net -t ${threshold_list[*]}"
+python3 "$cwd/src/network_int.py" -i "$input_directory" -o "$output_directory_net" -t "${threshold_list[@]}"
 
 echo "Done! Check your input folder for Alphabridge output and your output directory for the network :)"
+
 
 
 
