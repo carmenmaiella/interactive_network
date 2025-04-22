@@ -75,7 +75,7 @@ def extract_asym_id(s):
 
 
 '''MAIN FUNCTION!!!'''
-def get_protein_network_no_merging(df,label2auth, auth2label):
+def get_protein_network_no_merging(df,label2auth, auth2label,label_color_dict):
 
     #STEP1--> HAVING THE DF WITH ALL POSSIBLE INFORMATION
     #df_interfaces --> DF THAT IS USED FOR OBTAINING THE NO MERGED ETWORK (==MORE NODES)
@@ -201,17 +201,31 @@ def get_protein_network_no_merging(df,label2auth, auth2label):
 
     #COLORS 
     # Generate as many unique colors as the number of protein groups
-    num_proteins = len(nodes_for_each_protein)
-    cmap = plt.get_cmap("rainbow") 
-    colors = [mcolors.rgb2hex(cmap(i)) for i in np.linspace(0, 1, num_proteins)]
+    #num_proteins = len(nodes_for_each_protein)
+    #cmap = plt.get_cmap("rainbow") 
+    #colors = [mcolors.rgb2hex(cmap(i)) for i in np.linspace(0, 1, num_proteins)]
     
     # Assign colors to nodes based on their protein group
-    node_colors = []
-    for protein_index, size in enumerate(nodes_for_each_protein):
-        node_colors.extend([colors[protein_index]] * size) 
+    #node_colors = []
+    #for protein_index, size in enumerate(nodes_for_each_protein):
+    #    node_colors.extend([colors[protein_index]] * size) 
         
     # Assign colors to graph nodes
-    g.vs["color"] = node_colors
+    colors = []
+
+    for v in g.vs:
+        label = v["label"]
+        found_color = "gray"  #dafault color
+
+        for key_letter, color in label_color_dict.items():
+            if label.startswith(key_letter):
+                found_color = color
+                break 
+
+        colors.append(found_color)
+
+    g.vs["color"] = colors
+
    # print(f"node colors{node_colors}")
 
     
@@ -294,8 +308,8 @@ def get_protein_network_no_merging(df,label2auth, auth2label):
     unique_id_dict = {}
 
     for _, row in df.iterrows():
-        from_prefix_df = row['prot_1']
-        to_prefix_df = row['prot_2']
+        from_prefix_df = row['interface_intervals_1_labels']
+        to_prefix_df = row['interface_intervals_2_labels']
         unique_identifier = row['interface_id']
 
         key = (from_prefix_df, to_prefix_df)
@@ -309,36 +323,41 @@ def get_protein_network_no_merging(df,label2auth, auth2label):
     for edge in edges_diff:  
         source_index, target_index = edge
 
-        source_label_raw = g.vs[source_index]['asym_id']
-        target_label_raw = g.vs[target_index]['asym_id']
+        source_label_raw = g.vs[source_index]['label']
+        print(source_label_raw)
+        target_label_raw = g.vs[target_index]['label']
 
-        source_label = auth2label.get(source_label_raw, source_label_raw)
-        target_label = auth2label.get(target_label_raw, target_label_raw)
+        #source_label = auth2label.get(source_label_raw, source_label_raw)
+        #target_label = auth2label.get(target_label_raw, target_label_raw)
 
-        edge_key = (source_label, target_label)
+        edge_key = (source_label_raw, target_label_raw)
+        print(edge_key)
 
         if edge_key in unique_id_dict:
             edge_id = g.get_eid(source_index, target_index)
+            print(edge_id)
             interface_ids = unique_id_dict[edge_key]
 
-            g.es[edge_id]["type"] = ",".join(interface_ids)
+            g.es[edge_id]["interaction"] = ",".join(interface_ids)
             print(f"Assigned type(s) {interface_ids} to edge from {source_label_raw} to {target_label_raw} (mapped as {edge_key})")
+            
 
     #network in network x
     g_networkx = g.to_networkx()
     
     #informaton for the json file
     jobs = json_graph.node_link_data(g_networkx)
-    print(jobs)
+    #print(jobs)
 
     #adding iknterface IDs
-    #in questo caso vorrei che se type e uguale a none allora lnktype sia uguale al asym_id del nodo che abbia come indice source
     for link in jobs['links']:
-        if link['type'] == None:
+        if link['interaction'] is None:
             source_index = link['source']
-            link['type'] = jobs['nodes'][source_index]['asym_id']
-        else:   
-            link['type'] = link['type'].split(",")
+            asym_id_value = jobs['nodes'][source_index]['asym_id']
+            
+            del link['interaction']
+            link['asym_id'] = asym_id_value
+
 
     return jobs
 
