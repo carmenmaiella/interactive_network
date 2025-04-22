@@ -68,8 +68,14 @@ def create_new_column_interface_intervals_no_merge(df):
 
     return df
 
+#FUNCTION FOR EXTRACTNG ASYM_ID
+
+def extract_asym_id(s):
+    return s.split(' ')[0]
+
+
 '''MAIN FUNCTION!!!'''
-def get_protein_network_no_merging(df,dit):
+def get_protein_network_no_merging(df,label2auth, auth2label):
 
     #STEP1--> HAVING THE DF WITH ALL POSSIBLE INFORMATION
     #df_interfaces --> DF THAT IS USED FOR OBTAINING THE NO MERGED ETWORK (==MORE NODES)
@@ -79,7 +85,7 @@ def get_protein_network_no_merging(df,dit):
     df['prot_1_lab'] = df['prot_1']
     df['prot_2_lab'] = df['prot_2']
     for column in ['prot_1_lab', 'prot_2_lab']:
-        df[column]= df[column].replace(dit)
+        df[column]= df[column].replace(label2auth)
     # Save the DataFrame with the updated protein names
     df_interfaces["interface_intervals_1_labels"] = df["prot_1_lab"]+" "+ df_interfaces["interface_intervals_1"].apply(lambda x: " ".join(map(str, x)) if isinstance(x, list) else str(x)).astype(str)
     df_interfaces["interface_intervals_1_labels"] = df_interfaces["interface_intervals_1_labels"].apply(formatting_labels)
@@ -174,6 +180,7 @@ def get_protein_network_no_merging(df,dit):
         for interval_aa_str in value:
             labels.append(interval_aa_str)
 
+
     #print(f"labels: {labels}")
     #print(f"number of nodes:{number_of_nodes}")
     
@@ -182,8 +189,14 @@ def get_protein_network_no_merging(df,dit):
     
     #assign labels to each node (the order follow the dictionary protein_nodes_sorted)order
     g.vs['label'] = labels
-    #for vertex in g.vs:     
-     #   print(f"ID: {vertex.index}, Label: {vertex['label']}")
+
+    #asym_id
+    for vertex in g.vs:
+        vertex['asym_id'] =extract_asym_id(vertex['label'])
+
+    for vertex in g.vs:     
+       print(f"ID: {vertex.index}, Label: {vertex['label']}, asym_id: {vertex['asym_id']}")
+
 
 
     #COLORS 
@@ -210,7 +223,7 @@ def get_protein_network_no_merging(df,dit):
         source_index = g.vs.find(label=f"{source}").index
         target_index = g.vs.find(label=f"{target}").index
         edges_diff.append((source_index, target_index))
-    #print(f"edges diff:{edges_diff}")
+    print(f"edges diff:{edges_diff}")
     g.add_edges(edges_diff)
     
     # same protein edges
@@ -278,12 +291,54 @@ def get_protein_network_no_merging(df,dit):
     
     #second legend
     #ax.legend(handles=edge_patches, loc="upper left", title=r"$\bf{Interfaces}$")
+    unique_id_dict = {}
+
+    for _, row in df.iterrows():
+        from_prefix_df = row['prot_1']
+        to_prefix_df = row['prot_2']
+        unique_identifier = row['interface_id']
+
+        key = (from_prefix_df, to_prefix_df)
+
+        if key not in unique_id_dict:
+            unique_id_dict[key] = []
+
+        if unique_identifier not in unique_id_dict[key]:  # avoid duplicates
+            unique_id_dict[key].append(unique_identifier)
+
+    for edge in edges_diff:  
+        source_index, target_index = edge
+
+        source_label_raw = g.vs[source_index]['asym_id']
+        target_label_raw = g.vs[target_index]['asym_id']
+
+        source_label = auth2label.get(source_label_raw, source_label_raw)
+        target_label = auth2label.get(target_label_raw, target_label_raw)
+
+        edge_key = (source_label, target_label)
+
+        if edge_key in unique_id_dict:
+            edge_id = g.get_eid(source_index, target_index)
+            interface_ids = unique_id_dict[edge_key]
+
+            g.es[edge_id]["type"] = ",".join(interface_ids)
+            print(f"Assigned type(s) {interface_ids} to edge from {source_label_raw} to {target_label_raw} (mapped as {edge_key})")
 
     #network in network x
     g_networkx = g.to_networkx()
     
     #informaton for the json file
     jobs = json_graph.node_link_data(g_networkx)
+    print(jobs)
+
+    #adding iknterface IDs
+    #in questo caso vorrei che se type e uguale a none allora lnktype sia uguale al asym_id del nodo che abbia come indice source
+    for link in jobs['links']:
+        if link['type'] == None:
+            source_index = link['source']
+            link['type'] = jobs['nodes'][source_index]['asym_id']
+        else:   
+            link['type'] = link['type'].split(",")
 
     return jobs
 

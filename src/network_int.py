@@ -171,7 +171,7 @@ def main():
         #checking for empity df --> no interaction are predicted
         if not df.empty:
             #function --> INFORMATION FOR THE NETWORK WITH MORE NODES(NO MERGED)
-            j_not_merged = no_merg.get_protein_network_no_merging(df,label2auth)
+            j_not_merged = no_merg.get_protein_network_no_merging(df,label2auth,auth2label)
             print("FINISHED THE NOT MERGED NETWORK")
             #function --> INFORMATION FOR THE NETWORK WITH LESS NODES(MERGED)
             #j_merged = merg.get_protein_network_merging(df)
@@ -193,7 +193,7 @@ def main():
         print(args.o_dir)
 
     # Save to a JSON file
-    with open(f"{args.o_dir}/combined_networks.json", "w") as f:
+    with open(f"{args.o_dir}/test_1.json", "w") as f:
         json.dump(all_threshold, f, indent=4)
 
 if __name__ == '__main__':
