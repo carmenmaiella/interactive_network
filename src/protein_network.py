@@ -60,23 +60,22 @@ def create_new_column_interface_intervals_no_merge(df):
 '''MAIN FUNCTION!!!'''
 
  #STEP1--> HAVING THE DF WITH ALL POSSIBLE INFORMATION
-def get_protein_network(df, label_color_dict):
-    df_interfaces = create_new_column_interface_intervals_no_merge(df)
-    df_interfaces["interface_intervals_1_labels"] = df["prot_1"]+" "+ df_interfaces["interface_intervals_1"].apply(lambda x: " ".join(map(str, x)) if isinstance(x, list) else str(x)).astype(str)
-    df_interfaces["interface_intervals_1_labels"] = df_interfaces["interface_intervals_1_labels"].apply(formatting_labels)
-    df_interfaces["interface_intervals_2_labels"] = df["prot_2"]+ " "+ df_interfaces["interface_intervals_2"].apply(lambda x: " ".join(map(str, x)) if isinstance(x, list) else str(x)).astype(str)
-    df_interfaces["interface_intervals_2_labels"] = df_interfaces["interface_intervals_2_labels"].apply(formatting_labels)
-
+def get_protein_network(df,label2auth,df_pairwise_interaction,threshold,auth2label,label_color_dict):
+    df['prot_1_lab'] = df['prot_1']
+    df['prot_2_lab'] = df['prot_2']
+    for column in ['prot_1_lab', 'prot_2_lab']:
+        df[column]= df[column].replace(label2auth)
+    #print(df)
     # Initialize the dictionary to store proteins and their unique nodes
     protein_labels = {}
 
     # Iterating through each row of the DataFrame
-    for _, row in df_interfaces.iterrows():
+    for _, row in df.iterrows():
         # Extract protein IDs and their corresponding residue intervals
         prot_1_id = row['prot_1']
         prot_2_id = row['prot_2']
-        prot_1_interface = row["interface_intervals_1_labels"] 
-        prot_2_interface = row["interface_intervals_2_labels"] 
+        prot_1_interface = row["prot_1_lab"] 
+        prot_2_interface = row["prot_2_lab"] 
 
         # Initialize the protein in the dictionary if not already present
         if prot_1_id not in protein_labels:
@@ -116,13 +115,13 @@ def get_protein_network(df, label_color_dict):
     #orering them --> for having the same color as the other network
     protein_labels_sorted = dict(sorted(protein_labels.items()))
 
-    #print(f'Protein labels after sorting: {protein_labels_sorted}')
+    print(f'Protein labels after sorting: {protein_labels_sorted}')
 
     # INTERACTIONS with name of the protein
     protein_pairs = []
     protein_pairs_unique = []
 
-    for prot1, prot2 in zip(df_interfaces["prot_1"], df_interfaces["prot_2"]):
+    for prot1, prot2 in zip(df["prot_1"], df["prot_2"]):
         pair = [prot1, prot2]
         protein_pairs.append(pair)
 
@@ -144,7 +143,7 @@ def get_protein_network(df, label_color_dict):
         labels_2 = protein_labels.get(prot2, "No Label")
         protein_pairs_unique_labels.append([labels_1, labels_2])
 
-    #print("Unique interactions with labels:", protein_pairs_unique_labels)
+    print("Unique interactions with labels:", protein_pairs_unique_labels)
     g = ig.Graph()
     number_of_nodes = (len(protein_labels_sorted))
     labels = []
@@ -161,6 +160,10 @@ def get_protein_network(df, label_color_dict):
     #    print(f"ID: {vertex.index}, Label: {vertex['label']}")
 
     #COLORS 
+    # Generate as many unique colors as the number of protein groups
+    #cmap = plt.get_cmap("rainbow") 
+    #colors = [mcolors.rgb2hex(cmap(i)) for i in np.linspace(0, 1, number_of_nodes)]
+        
     # Assign colors to graph nodes
     colors = []
 
@@ -181,22 +184,77 @@ def get_protein_network(df, label_color_dict):
 
     #edges
     edges = []
-    for source, target in protein_pairs_unique_labels:
+    for source, target in protein_pairs_unique_labels: #Unique interactions with labels: [['A', 'B'], ['A', 'lig_C'], ['B', 'DNA_E'], ['B', 'DNA_F'], ['DNA_E', 'DNA_F']]
         # Convert source and target to match the label format
-        source_index = g.vs.find(label=f"{source}").index
+        source_index = g.vs.find(label=f"{source}").index #form the label give me the index 
+        #print(f"source:{source_index}")
         target_index = g.vs.find(label=f"{target}").index
+        #print(f"target:{target_index}")
         edges.append((source_index, target_index))
 
     #print(f"edges :{edges}")
     g.add_edges(edges)
     g.es['color'] = "black"
-    g.es["label"] = "physical interaction"
+    unique_id_dict = {}
+    #adding the unique identifier for the interface as the attribute type for the edges/links of the network
+    #creating a dictionary for storing them
+    for _, row in df.iterrows():
+        from_prefix_df = row['prot_1']
+        to_prefix_df = row['prot_2']
+        unique_identifier = row['interface_id']
+
+        key = (from_prefix_df, to_prefix_df)
+
+        if key not in unique_id_dict:
+            unique_id_dict[key] = []
+
+        if unique_identifier not in unique_id_dict[key]:  # avoid duplicates
+            unique_id_dict[key].append(unique_identifier)
+    for edge in edges:  
+        source_index, target_index = edge
+
+        source_label_raw = g.vs[source_index]["label"]
+        target_label_raw = g.vs[target_index]["label"]
+
+        source_label = auth2label.get(source_label_raw, source_label_raw)
+        target_label = auth2label.get(target_label_raw, target_label_raw)
+
+        edge_key = (source_label, target_label)
+
+        if edge_key in unique_id_dict:
+            edge_id = g.get_eid(source_index, target_index)
+            interface_ids = unique_id_dict[edge_key]
+
+            g.es[edge_id]["interaction"] = ",".join(interface_ids)
+
+    #print(unique_id_dict)
+    #g.es["label"] = "physical interaction"
+    for _, row in df_pairwise_interaction.iterrows():
+        from_prefix = row['first']
+        to_prefix = row['second']
+        score = row['pairwise_score'] 
+        #print(from_prefix, to_prefix,score)
+
+        for edge in edges:  
+            source_index, target_index = edge
+        
+            source_label = g.vs[source_index]["label"]
+            target_label = g.vs[target_index]["label"]
+        
+            if from_prefix in source_label and to_prefix in target_label:
+                edge_id = g.get_eid(source_index, target_index)
+                if score >= threshold:
+                    g.es[edge_id]["label"] = score
+                    #edges_labels =g.es[edge_id]["label"]
+                    #print(g.es[edge_id]["label"])
 
     #network in network x
     g_networkx = g.to_networkx()
     
     #informaton for the json file
     jobs = json_graph.node_link_data(g_networkx)
+    for link in jobs['links']:
+        link['interaction'] = link['interaction'].split(",")
 
     return jobs
 
