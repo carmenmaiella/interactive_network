@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import numpy as np
 from networkx.readwrite import json_graph;
+import obtaining_colors as col
 
 #FUCNTION USED IN NETWORK WITH NOT MERGIN NODES AND THE PROTEIN==NODE NETWORK
 
@@ -60,7 +61,8 @@ def create_new_column_interface_intervals_no_merge(df):
 '''MAIN FUNCTION!!!'''
 
  #STEP1--> HAVING THE DF WITH ALL POSSIBLE INFORMATION
-def get_protein_network(df,label2auth,df_pairwise_interaction,threshold,auth2label,label_color_dict):
+def get_protein_network(df,label2auth,df_pairwise_interaction,threshold,auth2label):
+    label_color_dict = col.get_label_color_dict(label2auth)
     df['prot_1_lab'] = df['prot_1']
     df['prot_2_lab'] = df['prot_2']
     for column in ['prot_1_lab', 'prot_2_lab']:
@@ -115,7 +117,7 @@ def get_protein_network(df,label2auth,df_pairwise_interaction,threshold,auth2lab
     #orering them --> for having the same color as the other network
     protein_labels_sorted = dict(sorted(protein_labels.items()))
 
-    print(f'Protein labels after sorting: {protein_labels_sorted}')
+    #print(f'Protein labels after sorting: {protein_labels_sorted}')
 
     # INTERACTIONS with name of the protein
     protein_pairs = []
@@ -143,7 +145,7 @@ def get_protein_network(df,label2auth,df_pairwise_interaction,threshold,auth2lab
         labels_2 = protein_labels.get(prot2, "No Label")
         protein_pairs_unique_labels.append([labels_1, labels_2])
 
-    print("Unique interactions with labels:", protein_pairs_unique_labels)
+    #print("Unique interactions with labels:", protein_pairs_unique_labels)
     g = ig.Graph()
     number_of_nodes = (len(protein_labels_sorted))
     labels = []
