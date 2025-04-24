@@ -5,7 +5,8 @@ import igraph as ig
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import numpy as np
-from networkx.readwrite import json_graph;
+from networkx.readwrite import json_graph
+import obtaining_colors as col
 
 #FUCNTION USED IN BOTH NETWORK WITH MERGING NODES AND NOT MERGIN NODES
 
@@ -142,12 +143,20 @@ def check_overlapping_interfaces(inte_1, inte_2):
     #otherwise
     return None
 
+def extract_asym_id(s):
+    return s.split(' ')[0]
 
 
 '''MAIN FUNCTION '''
-def get_protein_network_merging(df, label_color_dict):
+def get_protein_network_merging(df,label2auth,auth2label):
+    #print(df)
+    label_color_dict = col.get_label_color_dict(label2auth)
+    df['prot_1_lab'] = df['prot_1']
+    df['prot_2_lab'] = df['prot_2']
+    for column in ['prot_1_lab', 'prot_2_lab']:
+        df[column]= df[column].replace(label2auth)
     #STEP 2 --> FROM the BIG dataframe TO create SMALL dayaframe for a sigle protein
-    prot_names = set(df['prot_1']).union(set(df['prot_2']))
+    prot_names = set(df['prot_1_lab']).union(set(df['prot_2_lab']))
     df['original_index'] = df.index
 
     #dictionary for storing them
@@ -155,19 +164,22 @@ def get_protein_network_merging(df, label_color_dict):
     
     for prot in prot_names:
         #whent the slected prtoein is in the first column
-        prot1_rows = df[df['prot_1'] == prot][['interface','prot_1', 'start_1', 'end_1','prot_2','original_index']].rename(
-            columns={'prot_1': 'protein', 'start_1': 'start', 'end_1': 'end', 'prot_2':'bin_comb_with'}
+        prot1_rows = df[df['prot_1_lab'] == prot][['interface','prot_1_lab', 'start_1', 'end_1','prot_2_lab','original_index','interface_id']].rename(
+            columns={'prot_1_lab': 'protein', 'start_1': 'start', 'end_1': 'end', 'prot_2_lab':'bin_comb_with'}
         )
+        #print(prot1_rows)
         # when the selected protein is in the sec column
-        prot2_rows = df[df['prot_2'] == prot][['interface','prot_2', 'start_2', 'end_2','prot_1','original_index']].rename(
-            columns={'prot_2': 'protein', 'start_2': 'start', 'end_2': 'end','prot_1':'bin_comb_with'}
+        prot2_rows = df[df['prot_2_lab'] == prot][['interface','prot_2_lab', 'start_2', 'end_2','prot_1_lab','original_index','interface_id']].rename(
+            columns={'prot_2_lab': 'protein', 'start_2': 'start', 'end_2': 'end','prot_1_lab':'bin_comb_with'}
         )
         #combine the two rows information
         combined_rows = pd.concat([prot1_rows, prot2_rows], ignore_index=True)
+        #print(combined_rows)
 
           
         # Sort by 'original_index' to keep the rows in the correct order
         combined_rows = combined_rows.sort_values(by='original_index').reset_index(drop=True)
+        #print(combined_rows)
         #add the combined one as the value of the dictionary
         protein_df_dict[prot] = combined_rows
 
@@ -215,6 +227,7 @@ def get_protein_network_merging(df, label_color_dict):
     #using the original index we have now a dataframe we the protein involoved in the interaction are one after the other ikn rw
     #ex --> first row (protein A) and second row (protein B) in the orginal df are interacting and they are in the same row
     merged_df = pd.concat(protein_df_dict.values(), axis=0).sort_values(by="original_index").reset_index(drop=True)
+    
     #print(f"merged df:{merged_df}")
 
     # Creating a copy of the merged_df
@@ -232,13 +245,14 @@ def get_protein_network_merging(df, label_color_dict):
     # after we delete the row we can have merge the 2 df, based on the original index column
     # result --> output of AlphaBridge but with all the data processed
     final_df = pd.merge(filtered_original, filtered_copy, how="inner", on = 'original_index', suffixes=('_1', '_2'))
-    final_df["interface_intervals_mergerd_1_labels"] = final_df["protein_1"]+ " " +final_df["interface_intervals_merged_1"].apply(lambda x: " ".join(map(str, x)) if isinstance(x, list) else str(x)).astype(str)
-    final_df["interface_intervals_mergerd_1_labels"] = final_df["interface_intervals_mergerd_1_labels"].apply(formatting_labels)
-    final_df["interface_intervals_mergerd_2_labels"] = final_df["protein_2"]+ " " +final_df["interface_intervals_merged_2"].apply(lambda x: " ".join(map(str, x)) if isinstance(x, list) else str(x)).astype(str)
-    final_df["interface_intervals_mergerd_2_labels"] = final_df["interface_intervals_mergerd_2_labels"].apply(formatting_labels)
-
+    final_df["interface_intervals_merged_1_labels"] = final_df["protein_1"]+ " " +final_df["interface_intervals_merged_1"].apply(lambda x: " ".join(map(str, x)) if isinstance(x, list) else str(x)).astype(str)
+    final_df["interface_intervals_merged_1_labels"] = final_df["interface_intervals_merged_1_labels"].apply(formatting_labels)
+    final_df["interface_intervals_merged_2_labels"] = final_df["protein_2"]+ " " +final_df["interface_intervals_merged_2"].apply(lambda x: " ".join(map(str, x)) if isinstance(x, list) else str(x)).astype(str)
+    final_df["interface_intervals_merged_2_labels"] = final_df["interface_intervals_merged_2_labels"].apply(formatting_labels)
+    print(list(final_df))
 
     #print(f"merged_protein_dataframe_dict  STEP 6(obtaining again the output of alphabridge but merged-->{final_df}")
+    
 
 
     #START TO TAKE INFORMATION FOR PLOTTING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -252,8 +266,8 @@ def get_protein_network_merging(df, label_color_dict):
         # Extract protein IDs and their corresponding residue intervals
         prot_1_id = row['protein_1']
         prot_2_id = row['protein_2']
-        prot_1_interface = row["interface_intervals_mergerd_1_labels"] 
-        prot_2_interface = row["interface_intervals_mergerd_2_labels"] 
+        prot_1_interface = row["interface_intervals_merged_1_labels"] 
+        prot_2_interface = row["interface_intervals_merged_2_labels"] 
 
         # Initialize the protein in the dictionary if not already present
         if prot_1_id not in protein_nodes_old:
@@ -287,9 +301,9 @@ def get_protein_network_merging(df, label_color_dict):
     for _, row in final_df.iterrows():
         # Extract data for prot_1 and prot_2
         #prot_1_id = row["protein_1"]
-        aa_prot_1 = row["interface_intervals_mergerd_1_labels"]
+        aa_prot_1 = row["interface_intervals_merged_1_labels"]
         #prot_2_id = row["protein_2"]
-        aa_prot_2 = row["interface_intervals_mergerd_2_labels"]
+        aa_prot_2 = row["interface_intervals_merged_2_labels"]
 
         # Create a list of interactions between protein pairs
         interaction = (aa_prot_1, aa_prot_2)
@@ -347,6 +361,11 @@ def get_protein_network_merging(df, label_color_dict):
     g.vs['label'] = labels
     #for vertex in g.vs:     
     #    print(f"ID: {vertex.index}, Label: {vertex['label']}")
+    for vertex in g.vs:
+        asym_id = extract_asym_id(vertex['label'])
+        label_id_value = auth2label.get(asym_id) 
+        #vertex['asym_id'] = asym_id
+        vertex['label_asym_id'] = label_id_value
 
 
     #COLORS 
@@ -392,7 +411,7 @@ def get_protein_network_merging(df, label_color_dict):
     g.es['weight'] = 500
     g.es['color'] = "black"
     g.es["width"] = 1.5
-    g.es["label"] = "interface"
+    #g.es["label"] = "interface"
     #iterating all ossible edges
     for edge in edges_same:
         #for every tuple (=edge inside the list) we take the FROM node and the TO node
@@ -405,7 +424,7 @@ def get_protein_network_merging(df, label_color_dict):
         g.es[edges_id]["weight"] = 3
         g.es[edges_id]["color"] = node_color  #we give for each edge the color of his node
         g.es[edges_id]["width"] = 0.5
-        g.es[edges_id]["label"] = "intraface"
+        #g.es[edges_id]["label"] = "intraface"
 
 
 
@@ -446,10 +465,53 @@ def get_protein_network_merging(df, label_color_dict):
     #second legend
     #ax.legend(handles=edge_patches, loc="upper left", title=r"$\bf{Interfaces}$")
 
+    unique_id_dict = {}
+
+    for _, row in final_df.iterrows():
+        from_prefix_df = row['interface_intervals_merged_1_labels']
+        to_prefix_df = row['interface_intervals_merged_2_labels']
+        unique_identifier = row['interface_id_1']
+
+        key = (from_prefix_df, to_prefix_df)
+
+        if key not in unique_id_dict:
+            unique_id_dict[key] = []
+
+        if unique_identifier not in unique_id_dict[key]:  # avoid duplicates
+            unique_id_dict[key].append(unique_identifier)
+
+    for edge in edges_diff:  
+        source_index, target_index = edge
+
+        source_label_raw = g.vs[source_index]['label']
+        #print(source_label_raw)
+        target_label_raw = g.vs[target_index]['label']
+
+        #source_label = auth2label.get(source_label_raw, source_label_raw)
+        #target_label = auth2label.get(target_label_raw, target_label_raw)
+
+        edge_key = (source_label_raw, target_label_raw)
+        #print(edge_key)
+
+        if edge_key in unique_id_dict:
+            edge_id = g.get_eid(source_index, target_index)
+            #print(edge_id)
+            interface_ids = unique_id_dict[edge_key]
+
+            g.es[edge_id]["interaction"] = ",".join(interface_ids)
+
     #network in network x
     g_networkx = g.to_networkx()
     
     #informaton for the json file
     jobs = json_graph.node_link_data(g_networkx)
+
+    #adding iknterface IDs
+    for link in jobs['links']:
+        if link['interaction'] is None:
+            source_index = link['source']
+            label_id_value = jobs['nodes'][source_index]['label_asym_id']
+            del link['interaction']
+            link['label_asym_id'] = label_id_value
 
     return jobs

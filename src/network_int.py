@@ -89,7 +89,7 @@ def from_json_to_df(in_dir, threshold):
             for file in os.listdir(alphabridge_path):
                 if file.endswith("alphabridge_data.json"):
                     json_file_path = os.path.join(alphabridge_path, file)
-                    print(json_file_path)
+                    #print(json_file_path)
                     with open(json_file_path, 'r') as json_file:
                         json_data = json.load(json_file)
                         #print(type(json_data))
@@ -110,13 +110,6 @@ def from_json_to_df(in_dir, threshold):
                             auth2label[auth_asym_id] = label_asym_id
                     #from label to auth
                     label2auth = {value:key for key, value in auth2label.items()}
-                    label_list = []
-                    for aut, label in label2auth.items():
-                        label_list.append(label)
-                    num_proteins = len(label_list)
-                    cmap = plt.get_cmap("rainbow") 
-                    colors_list = [mcolors.rgb2hex(cmap(i)) for i in np.linspace(0, 1, num_proteins)]
-                    label_color_dict = dict(zip(label_list, colors_list))
                     rows = []
                     if "interactions" in json_data:
                         for interaction in json_data["interactions"]:
@@ -159,7 +152,7 @@ def from_json_to_df(in_dir, threshold):
     #for column in ['prot_1', 'prot_2']:
     #    df[column] = df[column].replace(auth2label)
     #print(df)
-    return df, label2auth, df_pairwise_interaction, auth2label,label_color_dict
+    return df, label2auth, df_pairwise_interaction, auth2label
 
 
 
@@ -177,33 +170,33 @@ def main():
     for th in threshold:
         #print(f"th:{th}")
         # funtion that creates the df that will be used as an inpt for the next fuction
-        df, label2auth, df_pairwise_interaction, auth2label,label_color_dict = from_json_to_df(in_dir, th)
+        df, label2auth, df_pairwise_interaction, auth2label = from_json_to_df(in_dir, th)
         #checking for empity df --> no interaction are predicted
         if not df.empty:
             #function --> INFORMATION FOR THE NETWORK WITH MORE NODES(NO MERGED)
-            j_not_merged = no_merg.get_protein_network_no_merging(df,label2auth,auth2label,label_color_dict)
+            j_not_merged = no_merg.get_protein_network_no_merging(df,label2auth,auth2label)
             print("FINISHED THE NOT MERGED NETWORK")
             #function --> INFORMATION FOR THE NETWORK WITH LESS NODES(MERGED)
-            j_merged = merg.get_protein_network_merging(df)
-            #print("FINISHED THE MERGED NETWORK")
+            j_merged = merg.get_protein_network_merging(df,label2auth,auth2label)
+            print("FINISHED THE MERGED NETWORK")
             #function --> INFORMATION FOR THE NETWORK WHERE NOES == PROTEIN
-            j_proteins = protein_net.get_protein_network(df,label2auth,df_pairwise_interaction,th,auth2label,label_color_dict)
+            j_proteins = protein_net.get_protein_network(df,label2auth,df_pairwise_interaction,th,auth2label)
             print("FINISHED THE WHOLE PROTEIN NETWORK")
             # Combine them into a single dictionary
             combined_networks = {"cut-off": th,
                 "network_not_merged": j_not_merged,
-             "network_merged": j_merged,
+                "network_merged": j_merged,
                 "protein_network": j_proteins 
             }
         else:
             combined_networks = {}
         #combine everything
         all_threshold[f"network at {th}"] = combined_networks
-        print("combined")
-        print(args.o_dir)
+        #print("combined")
+        #print(args.o_dir)
 
     # Save to a JSON file
-    with open(f"{args.o_dir}/test_3.json", "w") as f:
+    with open(f"{args.o_dir}/testnot_depmap.json", "w") as f:
         json.dump(all_threshold, f, indent=4)
 
 if __name__ == '__main__':

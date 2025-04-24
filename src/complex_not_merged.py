@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import numpy as np
 from networkx.readwrite import json_graph;
+import obtaining_colors as col
 
 #FUCNTION USED IN NETWORK WITH MERGING NODES AND NOT MERGIN NODES
 
@@ -75,17 +76,17 @@ def extract_asym_id(s):
 
 
 '''MAIN FUNCTION!!!'''
-def get_protein_network_no_merging(df,label2auth, auth2label,label_color_dict):
+def get_protein_network_no_merging(df,label2auth, auth2label):
 
     #STEP1--> HAVING THE DF WITH ALL POSSIBLE INFORMATION
     #df_interfaces --> DF THAT IS USED FOR OBTAINING THE NO MERGED ETWORK (==MORE NODES)
-    # .apply(lambda x: ...) to convert lists to space-separated strings.
-
+    label_color_dict = col.get_label_color_dict(label2auth)
     df_interfaces = create_new_column_interface_intervals_no_merge(df)
     df['prot_1_lab'] = df['prot_1']
     df['prot_2_lab'] = df['prot_2']
     for column in ['prot_1_lab', 'prot_2_lab']:
         df[column]= df[column].replace(label2auth)
+    print(label2auth)
     # Save the DataFrame with the updated protein names
     df_interfaces["interface_intervals_1_labels"] = df["prot_1_lab"]+" "+ df_interfaces["interface_intervals_1"].apply(lambda x: " ".join(map(str, x)) if isinstance(x, list) else str(x)).astype(str)
     df_interfaces["interface_intervals_1_labels"] = df_interfaces["interface_intervals_1_labels"].apply(formatting_labels)
@@ -125,7 +126,7 @@ def get_protein_network_no_merging(df,label2auth, auth2label,label_color_dict):
 
     #sort the protein in order so the olor will be the same in the network
     protein_nodes_sorted = dict(sorted(protein_nodes.items()))
-    print(f'protein nodes sorted {protein_nodes_sorted}')
+    #print(f'protein nodes sorted {protein_nodes_sorted}')
 
     # Calculate the number of unique nodes (intervals) for each protein
     nodes_for_each_protein = [len(value) for value in protein_nodes_sorted.values()]
@@ -192,10 +193,14 @@ def get_protein_network_no_merging(df,label2auth, auth2label,label_color_dict):
 
     #asym_id
     for vertex in g.vs:
-        vertex['asym_id'] =extract_asym_id(vertex['label'])
+        auth_asym_id = extract_asym_id(vertex['label'])
+        label_id_value = auth2label.get(auth_asym_id) 
+        #vertex['asym_id'] = asym_id
+        vertex['label_asym_id'] = label_id_value
 
-    for vertex in g.vs:     
-       print(f"ID: {vertex.index}, Label: {vertex['label']}, asym_id: {vertex['asym_id']}")
+
+    #for vertex in g.vs:     
+       #print(f"ID: {vertex.index}, Label: {vertex['label']}, asym_id: {vertex['asym_id']}")
 
 
 
@@ -237,7 +242,7 @@ def get_protein_network_no_merging(df,label2auth, auth2label,label_color_dict):
         source_index = g.vs.find(label=f"{source}").index
         target_index = g.vs.find(label=f"{target}").index
         edges_diff.append((source_index, target_index))
-    print(f"edges diff:{edges_diff}")
+    #print(f"edges diff:{edges_diff}")
     g.add_edges(edges_diff)
     
     # same protein edges
@@ -324,22 +329,22 @@ def get_protein_network_no_merging(df,label2auth, auth2label,label_color_dict):
         source_index, target_index = edge
 
         source_label_raw = g.vs[source_index]['label']
-        print(source_label_raw)
+        #print(source_label_raw)
         target_label_raw = g.vs[target_index]['label']
 
         #source_label = auth2label.get(source_label_raw, source_label_raw)
         #target_label = auth2label.get(target_label_raw, target_label_raw)
 
         edge_key = (source_label_raw, target_label_raw)
-        print(edge_key)
+        #print(edge_key)
 
         if edge_key in unique_id_dict:
             edge_id = g.get_eid(source_index, target_index)
-            print(edge_id)
+            #print(edge_id)
             interface_ids = unique_id_dict[edge_key]
 
             g.es[edge_id]["interaction"] = ",".join(interface_ids)
-            print(f"Assigned type(s) {interface_ids} to edge from {source_label_raw} to {target_label_raw} (mapped as {edge_key})")
+            #print(f"Assigned type(s) {interface_ids} to edge from {source_label_raw} to {target_label_raw} (mapped as {edge_key})")
             
 
     #network in network x
@@ -353,10 +358,10 @@ def get_protein_network_no_merging(df,label2auth, auth2label,label_color_dict):
     for link in jobs['links']:
         if link['interaction'] is None:
             source_index = link['source']
-            asym_id_value = jobs['nodes'][source_index]['asym_id']
-            
+            label_id_value = jobs['nodes'][source_index]['label_asym_id']
             del link['interaction']
-            link['asym_id'] = asym_id_value
+            link['label_asym_id'] = label_id_value
+
 
 
     return jobs
