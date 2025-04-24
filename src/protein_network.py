@@ -58,6 +58,9 @@ def create_new_column_interface_intervals_no_merge(df):
 
     return df
 
+def extract_asym_id(s):
+    return s.split(' ')[0]
+
 '''MAIN FUNCTION!!!'''
 
  #STEP1--> HAVING THE DF WITH ALL POSSIBLE INFORMATION
@@ -157,6 +160,12 @@ def get_protein_network(df,label2auth,df_pairwise_interaction,threshold,auth2lab
         labels.append(value)
 
     g.vs['label'] = labels
+
+    for vertex in g.vs:
+        auth_asym_id = extract_asym_id(vertex['label'])
+        label_id_value = auth2label.get(auth_asym_id) 
+        #vertex['asym_id'] = asym_id
+        vertex['label_asym_id'] = label_id_value
 
     #for vertex in g.vs:     
     #    print(f"ID: {vertex.index}, Label: {vertex['label']}")

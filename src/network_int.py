@@ -196,7 +196,7 @@ def main():
         #print(args.o_dir)
 
     # Save to a JSON file
-    with open(f"{args.o_dir}/test_5_new_alphab.json", "w") as f:
+    with open(f"{args.o_dir}/test_5_new_alphab_2.json", "w") as f:
         json.dump(all_threshold, f, indent=4)
 
 if __name__ == '__main__':
