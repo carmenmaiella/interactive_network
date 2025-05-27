@@ -86,7 +86,7 @@ def get_protein_network_no_merging(df,label2auth, auth2label):
     df['prot_2_lab'] = df['prot_2']
     for column in ['prot_1_lab', 'prot_2_lab']:
         df[column]= df[column].replace(label2auth)
-    print(label2auth)
+    #print(label2auth)
     # Save the DataFrame with the updated protein names
     df_interfaces["interface_intervals_1_labels"] = df["prot_1_lab"]+" "+ df_interfaces["interface_intervals_1"].apply(lambda x: " ".join(map(str, x)) if isinstance(x, list) else str(x)).astype(str)
     df_interfaces["interface_intervals_1_labels"] = df_interfaces["interface_intervals_1_labels"].apply(formatting_labels)

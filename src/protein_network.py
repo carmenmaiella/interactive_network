@@ -120,7 +120,7 @@ def get_protein_network(df,label2auth,df_pairwise_interaction,threshold,auth2lab
     #orering them --> for having the same color as the other network
     protein_labels_sorted = dict(sorted(protein_labels.items()))
 
-    print(f'Protein labels after sorting: {protein_labels_sorted}')
+    #print(f'Protein labels after sorting: {protein_labels_sorted}')
 
     # INTERACTIONS with name of the protein
     protein_pairs = []
@@ -148,7 +148,7 @@ def get_protein_network(df,label2auth,df_pairwise_interaction,threshold,auth2lab
         labels_2 = protein_labels.get(prot2, "No Label")
         protein_pairs_unique_labels.append([labels_1, labels_2])
 
-    print("Unique interactions with labels:", protein_pairs_unique_labels)
+    #print("Unique interactions with labels:", protein_pairs_unique_labels)
     g = ig.Graph()
     number_of_nodes = (len(protein_labels_sorted))
     labels = []
