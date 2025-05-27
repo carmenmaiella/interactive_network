@@ -1,67 +1,75 @@
-This project is based on the information extract from alphabridge, which is a tool that use the output provided by Alphafold3 which  different plots and files useful for the identification of interacting interfaces, if you want to know more about this, here is the link of the github repository: put the link
+This network representation is based on information extracted from AlphaBridge, a tool that uses output provided by AlphaFold3, specifically the confusion matrix, to generate various plots and files. These outputs help automate the process of highlighting which interactions in the predicted structure model are confident, making it easier and more straightforward for users to understand.
 
-	running the”mainscriptname”.sh
-		“xxx is a script that run the define_interface.py of alphabridge and uses the given output for running the network_int.py script,  providing different way to visualize confident physical interaction between proteins, usign a network, that could be made interactive ”
-			
-installation
+To learn more, see the GitHub repository: [AlphaBridge GitHub](https://github.com/PDB-REDO/AlphaBridge)
 
-	Packages required to run the find_interface script are listed in the conda environment file environment.yml
+# Running the alphabridge_network.sh
 
-Conda environment can be activated with the instruction:
+The `alphabridge_network.sh` script runs the `define_interface.py` module from AlphaBridge and uses its output to run the `network_int.py` script. This provides different ways to visualize confident physical interactions between proteins—such as AlphaBridge plots and a network graph, which can be made interactive.
+			 
+## Installation
+
+Required packages are listed in the `environment.yml` file.
+
+To create and activate the Conda environment:
+
+```bash
 conda env create -f environment.yml
-
 conda activate Network
+```
 
+## Run the whole pipeline
 
-	RUNNING THE WHOLE  PIPELINE LOCALLY (IF YOU HAVE NOT RUN ALPHABRIDGE YET)
-How to run the script
-supposedly that you have tun your importat/interesnting/idk  prediction of alphafold3, that could be either:
--structural prediction of all possibile binary interaction of a set of protein of interest
--structural prediction of the complex of your interest 
+1. Prepare Your Data
 
- Download and unzip the folder from the AlphaFold server.
+    Download and unzip the AlphaFold3 output ZIP file for a structural prediction of the complex you're interested in.
 
-this pipeline INCLUE running alphabridge, so you need to clone the github repository (put link aain)
+2. Clone [AlphaBridge repository](https://github.com/PDB-REDO/AlphaBridge)
 
-moreover, alphabridge allow you to have 3 different level of confidence for the predicted contact interaction, (0.5, 0.75 and 0.9), but for now the network is only provided using only one threshold, so select the one that you preferer between those three options 
-
-To run the script from the interactive_network working directory, use
-
+From the `interactive_network` working directory, run the main script:
+```bash
 bash alphabridge_network.sh path-to-AlphaFold3-folder path-to-final-output-folder threshold
-
+```
 DEMO EXAMPLE
+```bash
 bash alphabridge_network.sh path-to-AlphaFold3-folder path-to-final-output-folder threshold
+```
+Threshold: Use one of the following values for threshold:
 
-	RUNNING THE NETWORK  PIPELINE LOCALLY (IF YOU HAVE ALREADY RUN ALPHABRIDGE)
+0.5 → low confidence
 
-How to run the scirpt
+0.75 → default confidence
 
-To run the script from the interactive_network working directory, use:
+0.9 → high confidence
 
-for runnng the network of the whole compelx prediction
+### Important: CONFIG FILE
 
-python3 src/binary_interactionspy -i path-to-AlphaFold3-folder -o path-to-final-output-folder threshold -t threshold
+The `alphabridge_network.sh` script is designed to use the path to AlphaBridge defined in the `config_alphabridge_path.ini` file.
 
-for runnng the network of the whole compelx prediction
+## Output files
 
-python3 src/nework_int.py -i path-to-AlphaFold3-folder -o path-to-final-output-folder threshold -t threshold
+For more information about the output of alphabridge:  https://github.com/PDB-REDO/AlphaBridge
 
-The output of alphabridge will be saved in the same folder provided as an input, but the output of the main pipeline will be saved in the desired output folder
+The output includes `.json` files representing two types of networks for each threshold value.
 
-IMPORTANT: CONFIG FILE, → the .sh script is written using my personal pathway where I had installed the main alphabridge script, for change this, chang it in the confing file, it will autmatically change the main script 
+#### Protein Network
 
-OUTPUT FILE
-for more information about the output of alphabridg, e: put the link
+- **Node** = protein  
+- **Edge** = one or more interfaces predicted by AlphaBridge
 
-	INTERACTIVE NETWORK: a json file containing 2 different network:
-		LOGIC OF THE NETWORK:
-			-nodes: is NOT a whole protein but a specific contact area of that protein that is involved in a physical interaction whithin another protein (nodes that belong to the same protein are colored with the same color)
-			-edges
--tra diverse proteine → interfaces/physical itneraction between two contact area of different protein (colored in black)
--tra stesse proteine → highlight the nodes that belongs to the same protein (same color of the nodes)
-		-NETWORK WITH MORE NODES/NOT LOGIC MERGED → directly take the information form alphabridge and directly display them as a network
-		-NETWORK WITH LESS NODES/MERGED → process the information of alphabridge in a way that if different residues form the the same protein are involved in different interfaces/interaction, they will be merged in the same node
+#### Interface Network
 
-HOW CAN YOU VISUALIZE THE NETWORK:
-	-d3 web + js + explanation
-	-html ???
+- **Node** = specific contact region of a protein involved in physical interaction  
+  - Nodes from the same protein share the same color
+- **Edges**:
+  - **Between different proteins** → interaction between contact areas of two different proteins (black edges)
+  - **Within the same protein** → highlights nodes from the same protein (edges match node color)
+
+
+## Interactive Network
+
+A JavaScript script is available that, together with a CSS file, can render an interactive network graph locally using the **D3.js** library.
+
+- **Input**: the `.json` network file
+- **Output**: an interactive graph displayed in a local webpage
+
+This allows you to explore physical protein interactions visually and dynamically.
